@@ -21,8 +21,10 @@ import {
   ScreenSpaceEventType,
   Cartographic,
   IonGeocodeProviderType,
-  ShadowMode, 
-  Color
+  ShadowMode,
+  Color,
+  DynamicAtmosphereLightingType,
+  SkyAtmosphere
 } from "cesium";
 import WaypointBillboardOverlay from "./WaypointBillboardOverlay";
 import Layers from "./Layers";
@@ -55,13 +57,20 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
 
   useEffect(() => {
     if (!viewer) return;
-    const now = JulianDate.now();
-    viewer.scene.light = new SunLight(now);
+    viewer.scene.atmosphere.dynamicLighting = DynamicAtmosphereLightingType.SUNLIGHT;
     viewer.shadows = true;
     viewer.scene.shadowMap.enabled = true;
+    viewer.scene.terrainShadows = true;
+    viewer.scene.shadowMap.fadingEnabled = false;
+    viewer.scene.sun.show = true;
+    viewer.scene.atmosphere.hueShift = 0.4; // Cycle 40% around the color wheel
+    viewer.scene.atmosphere.brightnessShift = 0.25; // Increase the brightness
+    viewer.scene.atmosphere.saturationShift = -0.1; // Desaturate the colors
+    viewer.scene.skyAtmosphere = new SkyAtmosphere();
     viewer.scene.skyAtmosphere.show = true;
+
   }, [viewer]);
-  
+
 
 
   // Click handler to add waypoints
@@ -99,19 +108,13 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
     if (!viewer) return;
     const julian = JulianDate.fromDate(jsDate);
     viewer.clock.currentTime = julian;
-    viewer.scene.light = new SunLight(julian);
-  
-    // Manual sky dimming (optional: tweak thresholds)
-    const hour = jsDate.getUTCHours();
-    if (hour >= 19 || hour < 6) {
-      viewer.scene.backgroundColor = new Color(0.03, 0.03, 0.1, 1); // dark blue
-    } else {
-      viewer.scene.backgroundColor = Color.BLACK;
-    }
+    
+
+    
   };
-  
-  
-  
+
+
+
 
   return (
     <div id="cesium map main div" className="relative w-full h-full z-0 bg-red-100">
@@ -137,9 +140,9 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
         navigationHelpButton={false}
         animation={false}
       >
-       <Sun
-       show={true}
-       />
+        <Sun
+          show={true}
+        />
         {showOSM && (
           <Cesium3DTileset
             url={IonResource.fromAssetId(96188)}

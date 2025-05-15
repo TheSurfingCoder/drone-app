@@ -11,7 +11,7 @@ import { Cartesian3 } from '@cesium/engine';
 import React from 'react';
 import RedBox from './Redbox';
 export default function MissionPlannerWrapper() {
-  const [viewMode, setViewMode] = useState('2d');
+  const [viewMode, setViewMode] = useState('3d');
   const [waypoints, setWaypoints] = useState([]);
   const [unitSystem, setUnitSystem] = useState('metric');
   const [dronePosition, setDronePosition] = useState([37.7749, -122.4194]); // SF default
