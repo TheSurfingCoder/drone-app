@@ -1,0 +1,67 @@
+{
+  "name": "cesiumjs-vite-example",
+  "version": "1.0.0",
+  "description": "The minimal recommended setup for an app using Cesium with Vite.",
+  "homepage": "https://cesium.com/platform/cesiumjs/",
+  "license": "Apache-2.0",
+  "author": {
+    "name": "Cesium GS, Inc.",
+    "url": "https://cesium.com"
+  },
+  "keywords": [
+    "cesium",
+    "CesiumJS",
+    "vite",
+    "example"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CesiumGS/cesium-vite-example.git"
+  },
+  "type": "module",
+  "scripts": {
+    "prepare": "husky install",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "eslint": "eslint \"./**/*.js\" \"./**/*.html\" --cache --quiet",
+    "prettier": "prettier --write --no-config \"**/*\"",
+    "prettier-check": "prettier --check --no-config \"**/*\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.26.0",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.4.1",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^8.57.1",
+    "eslint-config-cesium": "^10.0.2",
+    "eslint-plugin-es": "^4.1.0",
+    "eslint-plugin-html": "^7.1.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "husky": "^8.0.3",
+    "postcss": "^8.5.3",
+    "prettier": "^3.2.4",
+    "tailwindcss": "^3.4.17",
+    "vite": "^5.0.8",
+    "vite-plugin-cesium": "^1.2.23",
+    "vite-plugin-static-copy": "^1.0.6"
+  },
+  "dependencies": {
+    "@turf/turf": "^7.2.0",
+    "cesium": "^1.114.0",
+    "leaflet": "^1.9.4",
+    "luxon": "^3.6.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-leaflet": "^5.0.0",
+    "resium": "^1.19.0-beta.1",
+    "vite": "^6.3.5"
+  },
+  "lint-staged": {
+    "*.{js,html}": [
+      "eslint --cache --quiet",
+      "prettier --write --no-config"
+    ]
+  }
+}
