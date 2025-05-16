@@ -24,7 +24,11 @@ import {
   ShadowMode,
   Color,
   DynamicAtmosphereLightingType,
-  SkyAtmosphere
+  SkyAtmosphere,
+  Simon1994PlanetaryPositions,
+  Transforms,
+  Cartesian3,
+  Matrix3
 } from "cesium";
 import WaypointBillboardOverlay from "./WaypointBillboardOverlay";
 import Layers from "./Layers";
@@ -58,10 +62,11 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
   useEffect(() => {
     if (!viewer) return;
     viewer.scene.atmosphere.dynamicLighting = DynamicAtmosphereLightingType.SUNLIGHT;
+  
     viewer.shadows = true;
     viewer.scene.shadowMap.enabled = true;
     viewer.scene.terrainShadows = true;
-    viewer.scene.shadowMap.fadingEnabled = false;
+    viewer.scene.shadowMap.fadingEnabled = true;
     viewer.scene.sun.show = true;
     viewer.scene.atmosphere.hueShift = 0.4; // Cycle 40% around the color wheel
     viewer.scene.atmosphere.brightnessShift = 0.25; // Increase the brightness
@@ -107,11 +112,72 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
   const handleSunDateTimeChange = (jsDate) => {
     if (!viewer) return;
     const julian = JulianDate.fromDate(jsDate);
-    viewer.clock.currentTime = julian;
-    
 
-    
+    console.log("📆 Julian Date as JS date:", JulianDate.toDate(julian).toISOString());
+
+    viewer.clock.currentTime = julian;
+
+    console.log(viewer.scene.light)
+    updateSkyAtmosphereFromSun(viewer)
+
   };
+
+  
+  function updateSkyAtmosphereFromSun(viewer) {
+    if (!viewer) return;
+  
+    const time = viewer.clock.currentTime;
+  
+    // Step 1: Get camera position
+    const position = viewer.scene.camera.position;
+  
+    // Step 2: Compute local "up" vector from camera
+    const up = viewer.scene.globe.ellipsoid.geodeticSurfaceNormal(position, new Cartesian3());
+  
+    // Step 3: Compute sun position in inertial space
+    const sunPosInertial = Simon1994PlanetaryPositions.computeSunPositionInEarthInertialFrame(time);
+  
+    // Step 4: Convert to Earth-fixed frame
+    const transform = Transforms.computeTemeToPseudoFixedMatrix(time);
+    if (!transform) {
+      console.warn("🛑 TemeToFixed transform not available.");
+      return;
+    }
+  
+    const sunPosFixed = Matrix3.multiplyByVector(transform, sunPosInertial, new Cartesian3());
+    const sunDirection = Cartesian3.normalize(sunPosFixed, new Cartesian3());
+  
+    // Step 5: Dot product = how aligned sun is with "up"
+    const dot = Cartesian3.dot(up, sunDirection);
+    const elevationAngle = CesiumMath.toDegrees(Math.asin(CesiumMath.clamp(dot, -1.0, 1.0)));
+  
+    console.log("☀️ Sun Elevation:", elevationAngle.toFixed(2), "°");
+  
+    // Step 6: Adjust sky appearance based on sun elevation
+    if (elevationAngle < -6) {
+      // Night
+      viewer.scene.skyAtmosphere.brightnessShift = -1.0;
+      viewer.scene.skyAtmosphere.hueShift = -0.3;
+      viewer.scene.skyAtmosphere.saturationShift = -0.2;
+    } else if (elevationAngle < 2) {
+      // Civil twilight
+      viewer.scene.skyAtmosphere.brightnessShift = -0.6;
+      viewer.scene.skyAtmosphere.hueShift = -0.2;
+      viewer.scene.skyAtmosphere.saturationShift = -0.1;
+    } else if (elevationAngle < 10) {
+      // Golden hour
+      viewer.scene.skyAtmosphere.brightnessShift = -0.3;
+      viewer.scene.skyAtmosphere.hueShift = -0.1;
+      viewer.scene.skyAtmosphere.saturationShift = 0.0;
+    } else {
+      // Daytime
+      viewer.scene.skyAtmosphere.brightnessShift = 0.0;
+      viewer.scene.skyAtmosphere.hueShift = 0.0;
+      viewer.scene.skyAtmosphere.saturationShift = 0.0;
+    }
+  }
+  
+
 
 
 
