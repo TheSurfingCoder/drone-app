@@ -28,7 +28,12 @@ import {
   Simon1994PlanetaryPositions,
   Transforms,
   Cartesian3,
-  Matrix3
+  Matrix3,
+  createWorldTerrainAsync,
+  OpenStreetMapImageryProvider,
+  createWorldImageryAsync,
+  EllipsoidTerrainProvider
+  
 } from "cesium";
 import WaypointBillboardOverlay from "./WaypointBillboardOverlay";
 import Layers from "./Layers";
@@ -44,6 +49,9 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
   const [showOSM, setShowOSM] = useState(false);
   const [showGoogle, setShowGoogle] = useState(true);
   const [sunDirection, setSunDirection] = useState(null);
+  const [mapMode, setMapMode] = useState("osm"); // ✅ default to OSM
+  const [showOSMBuildings, setShowOSMBuildings] = useState(true); // ✅ also default to buildings ON
+
 
 
   // Attach viewer instance
@@ -62,7 +70,7 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
   useEffect(() => {
     if (!viewer) return;
     viewer.scene.atmosphere.dynamicLighting = DynamicAtmosphereLightingType.SUNLIGHT;
-  
+
     viewer.shadows = true;
     viewer.scene.shadowMap.enabled = true;
     viewer.scene.terrainShadows = true;
@@ -98,6 +106,34 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
     return () => handler.destroy();
   }, [viewer, setWaypoints]);
 
+
+  useEffect(() => {
+    if (!viewer) return;
+  
+    const imageryLayers = viewer.imageryLayers;
+    imageryLayers.removeAll(); // Clear all imagery layers
+  
+    const setupLayers = async () => {
+      if (mapMode === "osm") {
+        // 1. Set terrain
+        const worldTerrain = await createWorldTerrainAsync();
+        viewer.terrainProvider = worldTerrain;
+  
+        // 2. Add default Cesium imagery (e.g. Bing Aerial with labels)
+        const worldImagery = await createWorldImageryAsync();
+        imageryLayers.addImageryProvider(worldImagery);
+      } else {
+        // 3. Google mode — flat Earth, no imagery
+        viewer.terrainProvider = new EllipsoidTerrainProvider();
+      }
+    };
+  
+    setupLayers();
+  }, [viewer, mapMode]);
+  
+  
+  
+
   // Expose viewer to parent
   useImperativeHandle(ref, () => ({
     get cesiumElement() {
@@ -122,37 +158,37 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
 
   };
 
-  
+
   function updateSkyAtmosphereFromSun(viewer) {
     if (!viewer) return;
-  
+
     const time = viewer.clock.currentTime;
-  
+
     // Step 1: Get camera position
     const position = viewer.scene.camera.position;
-  
+
     // Step 2: Compute local "up" vector from camera
     const up = viewer.scene.globe.ellipsoid.geodeticSurfaceNormal(position, new Cartesian3());
-  
+
     // Step 3: Compute sun position in inertial space
     const sunPosInertial = Simon1994PlanetaryPositions.computeSunPositionInEarthInertialFrame(time);
-  
+
     // Step 4: Convert to Earth-fixed frame
     const transform = Transforms.computeTemeToPseudoFixedMatrix(time);
     if (!transform) {
       console.warn("🛑 TemeToFixed transform not available.");
       return;
     }
-  
+
     const sunPosFixed = Matrix3.multiplyByVector(transform, sunPosInertial, new Cartesian3());
     const sunDirection = Cartesian3.normalize(sunPosFixed, new Cartesian3());
-  
+
     // Step 5: Dot product = how aligned sun is with "up"
     const dot = Cartesian3.dot(up, sunDirection);
     const elevationAngle = CesiumMath.toDegrees(Math.asin(CesiumMath.clamp(dot, -1.0, 1.0)));
-  
+
     console.log("☀️ Sun Elevation:", elevationAngle.toFixed(2), "°");
-  
+
     // Step 6: Adjust sky appearance based on sun elevation
     if (elevationAngle < -6) {
       // Night
@@ -176,7 +212,7 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
       viewer.scene.skyAtmosphere.saturationShift = 0.0;
     }
   }
-  
+
 
 
 
@@ -186,9 +222,12 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
     <div id="cesium map main div" className="relative w-full h-full z-0 bg-red-100">
       {console.trace("🟥 CesiumMap wrapper div rendered")}
       <Layers
-        showOSM={showOSM}
-        onToggle={handleToggle}
+        mapMode={mapMode}
+        setMapMode={setMapMode}
+        showOSMBuildings={showOSMBuildings}
+        toggleOSMBuildings={() => setShowOSMBuildings(prev => !prev)}
       />
+
       {viewerRef.current?.cesiumElement && (
         <SunControlPanel onDateTimeChange={handleSunDateTimeChange} />
       )}
@@ -209,18 +248,22 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
         <Sun
           show={true}
         />
-        {showOSM && (
+        {mapMode === "google" && (
           <Cesium3DTileset
-            url={IonResource.fromAssetId(96188)}
+            url={IonResource.fromAssetId(2275207)} // Google 3D tiles
+            onError={(e) => console.error("Google Tileset error", e)}
+            onReady={(e) => console.log("Google Tileset loaded", e)}
+          />
+        )}
+
+        {mapMode === "osm" && showOSMBuildings && (
+          <Cesium3DTileset
+            url={IonResource.fromAssetId(96188)} // OSM Buildings
             onError={(e) => console.error("OSM Tileset error", e)}
             onReady={(e) => console.log("OSM Tileset loaded", e)}
           />
         )}
-        <Cesium3DTileset
-          url={IonResource.fromAssetId(2275207)}
-          onError={(e) => console.error("OSM Tileset error", e)}
-          onReady={(e) => console.log("OSM Tileset loaded", e)}
-        />
+
         {waypoints.map((wp, i) => (
           <div key={i}>
             <WaypointBillboardOverlay waypoints={waypoints} />
