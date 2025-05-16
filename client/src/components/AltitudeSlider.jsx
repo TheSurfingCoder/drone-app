@@ -14,7 +14,7 @@ export default function AltitudeSlider({ value, onChange, unitSystem, minAltitud
       <input
         type="range"
         min={minAltitude}
-        max={minAltitude+500} // You can tweak this max value
+        max={minAltitude+250} // You can tweak this max value
         step={1}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}

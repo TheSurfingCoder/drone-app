@@ -32,8 +32,9 @@ import {
   createWorldTerrainAsync,
   OpenStreetMapImageryProvider,
   createWorldImageryAsync,
-  EllipsoidTerrainProvider
-  
+  EllipsoidTerrainProvider,
+  sampleTerrainMostDetailed
+
 } from "cesium";
 import WaypointBillboardOverlay from "./WaypointBillboardOverlay";
 import Layers from "./Layers";
@@ -89,50 +90,69 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
   // Click handler to add waypoints
   useEffect(() => {
     if (!viewer) return;
-
+  
     const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
+  
     handler.setInputAction((movement) => {
-      const picked = viewer.scene.pickPosition(movement.position);
-      if (!picked) return;
-
-      const carto = Cartographic.fromCartesian(picked);
+      const pickedCartesian = viewer.scene.pickPosition(movement.position);
+      if (!pickedCartesian) {
+        console.warn("❌ Could not determine clicked position.");
+        return;
+      }
+  
+      const carto = Cartographic.fromCartesian(pickedCartesian);
       const lat = CesiumMath.toDegrees(carto.latitude);
       const lng = CesiumMath.toDegrees(carto.longitude);
-      const alt = carto.height;
-
-      setWaypoints((prev) => [...prev, { lat, lng, alt }]);
+      const groundHeight = carto.height ?? 0;
+  
+      const height = 50; // Default height (can be edited via AltitudeSlider)
+      const groundPosition = pickedCartesian;
+      const elevatedPosition = Cartesian3.fromDegrees(lng, lat, groundHeight + height);
+  
+      setWaypoints((prev) => [
+        ...prev,
+        {
+          lat,
+          lng,
+          height,
+          groundHeight,
+          groundPosition,
+          elevatedPosition,
+        },
+      ]);
     }, ScreenSpaceEventType.LEFT_CLICK);
-
-    return () => handler.destroy();
+  
+    return () => {
+      handler.destroy();
+    };
   }, [viewer, setWaypoints]);
+  
+
 
 
   useEffect(() => {
     if (!viewer) return;
-  
+
     const imageryLayers = viewer.imageryLayers;
     imageryLayers.removeAll(); // Clear all imagery layers
-  
+
     const setupLayers = async () => {
       if (mapMode === "osm") {
         // 1. Set terrain
         const worldTerrain = await createWorldTerrainAsync();
         viewer.terrainProvider = worldTerrain;
-  
+
         // 2. Add default Cesium imagery (e.g. Bing Aerial with labels)
         const worldImagery = await createWorldImageryAsync();
         imageryLayers.addImageryProvider(worldImagery);
-      } else {
-        // 3. Google mode — flat Earth, no imagery
-        viewer.terrainProvider = new EllipsoidTerrainProvider();
-      }
+      } 
     };
-  
+
     setupLayers();
   }, [viewer, mapMode]);
-  
-  
-  
+
+
+
 
   // Expose viewer to parent
   useImperativeHandle(ref, () => ({
@@ -264,11 +284,11 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
           />
         )}
 
-        {waypoints.map((wp, i) => (
-          <div key={i}>
-            <WaypointBillboardOverlay waypoints={waypoints} />
-          </div>
-        ))}
+
+        <WaypointBillboardOverlay waypoints={waypoints}
+          sceneMode={viewer?.scene.mode}
+        />
+
       </Viewer>
     </div>
   );
