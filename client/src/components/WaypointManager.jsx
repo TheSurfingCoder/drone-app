@@ -10,17 +10,20 @@ export default function WaypointManager({ waypoints, setWaypoints, unitSystem, t
   useMapEvents({
     click: async (e) => {
       const { lat, lng } = e.latlng;
-      let alt = 0;
+      let groundHeight = 0;
+      let height = 0;
+      let groundPosition = 0;
+      let elevatedPosition = 0;
 
       if (terrainProvider) {
         try {
-          alt = await getCesiumAltitude(terrainProvider, lat, lng);
+          groundHeight = await getCesiumAltitude(terrainProvider, lat, lng);
         } catch (err) {
           console.warn("Failed to get terrain height, defaulting to 0", err);
         }
       }
 
-      setWaypoints((prev) => [...prev, { lat, lng, alt, groundAlt: alt }]);
+      setWaypoints((prev) => [...prev, { lat, lng, height, groundHeight, groundPosition, elevatedPosition }]);
     },
   });
   console.log(waypoints); 
@@ -33,7 +36,10 @@ export default function WaypointManager({ waypoints, setWaypoints, unitSystem, t
               key={i}
               lat={wp.lat}
               lng={wp.lng}
-              alt={wp.alt}
+              alt={wp.groundHeight}
+              height={wp.height}
+              groundPosition={wp.groundPosition}
+              elevatedPosition={wp.elevatedPosition}
               index={i}
               unitSystem={unitSystem}
 

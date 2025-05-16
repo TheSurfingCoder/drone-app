@@ -1,5 +1,6 @@
 import AltitudeSlider from './AltitudeSlider'; // adjust path if needed
 import React from 'react';
+import { Cartesian3 } from 'cesium';
 
 export default function WaypointList({ waypoints, setWaypoints, unitSystem }) {
   const handleDelete = (indexToDelete) => {
@@ -36,20 +37,22 @@ export default function WaypointList({ waypoints, setWaypoints, unitSystem }) {
             <strong>#{i + 1}</strong>
             <div>Lat: {wp.lat.toFixed(4)}</div>
             <div>Lng: {wp.lng.toFixed(4)}</div>
-            <div>Alt: {formatAlt(wp.alt)}</div>
+            <div>Elevation at Base: {formatAlt(wp.groundHeight)}</div>
+            <div>Height from Base: {wp.height}</div>
 
             <AltitudeSlider
-              value={wp.alt ?? 0}
-              minAltitude={wp.groundAlt ?? 0}
+              value={wp.height+wp.groundHeight ?? 0}
+              minHeight={0}
               unitSystem={unitSystem}
-              onChange={(newAlt) => {
+              onChange={(newHeight) => {
                 setWaypoints((prev) =>
                   prev.map((w, idx) =>
-                    idx === i ? { ...w, alt: newAlt } : w
+                    idx === i ? { ...w, height: newHeight, elevatedPosition: Cartesian3.fromDegrees(wp.lng, wp.lat, wp.groundHeight + newHeight) } : w
                   )
                 );
               }}
             />
+            
 
 
             <button

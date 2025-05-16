@@ -120,8 +120,9 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
           elevatedPosition,
         },
       ]);
+     
     }, ScreenSpaceEventType.LEFT_CLICK);
-  
+    
     return () => {
       handler.destroy();
     };
@@ -236,7 +237,7 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
 
 
 
-
+  console.log("waypoints", waypoints)
 
   return (
     <div id="cesium map main div" className="relative w-full h-full z-0 bg-red-100">
