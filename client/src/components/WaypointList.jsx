@@ -37,7 +37,7 @@ export default function WaypointList({ waypoints, setWaypoints, unitSystem }) {
             <strong>#{i + 1}</strong>
             <div>Lat: {wp.lat.toFixed(4)}</div>
             <div>Lng: {wp.lng.toFixed(4)}</div>
-            <div>Elevation at Base: {formatAlt(wp.groundHeight)}</div>
+            <div>Elevation (Base): {formatAlt(wp.groundHeight)}</div>
             <div>Height from Base: {wp.height}</div>
 
             <AltitudeSlider

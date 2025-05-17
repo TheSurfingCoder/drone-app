@@ -44,6 +44,7 @@ const MapComponent = forwardRef(({ waypoints, setWaypoints, unitSystem, dronePos
         ref={ref}
         center={startPosition}
         zoom={13}
+        zoomControl={false}
         scrollWheelZoom={true}
         whenCreated={(map) => 
           console.log("Leaflet map created:", map) // ✅ Add this

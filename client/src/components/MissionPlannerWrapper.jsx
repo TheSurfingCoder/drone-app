@@ -11,7 +11,7 @@ import { Cartesian3 } from '@cesium/engine';
 import React from 'react';
 import RedBox from './Redbox';
 export default function MissionPlannerWrapper() {
-  const [viewMode, setViewMode] = useState('3d');
+  const [viewMode, setViewMode] = useState('2d');
   const [waypoints, setWaypoints] = useState([]);
   const [unitSystem, setUnitSystem] = useState('metric');
   const [dronePosition, setDronePosition] = useState([37.7749, -122.4194]); // SF default
@@ -25,12 +25,12 @@ export default function MissionPlannerWrapper() {
     console.log(mapRef.current)
     if (viewMode === '2d') {
       const map = mapRef.current;
-        map.setView([lat, lng], 15);
-        map.invalidateSize()
-       
-      
+      map.setView([lat, lng], 15);
+      map.invalidateSize()
 
-     
+
+
+
     }
 
     if (viewMode === '3d') {
@@ -59,9 +59,15 @@ export default function MissionPlannerWrapper() {
 
   return (
     <div className="w-screen h-screen flex flex-col">
-      
+
       {/* 🧭 Top Bar */}
-      <div className="w-full h-14 bg-white px-4 py-0 flex justify-between items-center z-[999]">
+      <div className=" w-full h-auto sm:h-14
+    bg-white
+    px-4 sm:px-4 py-2 sm:py-0
+    flex flex-col sm:flex-row
+    justify-between sm:items-center
+    gap-2 sm:gap-0
+    z-[999]">
         <div className="flex items-center gap-3">
           <UnitToggle unitSystem={unitSystem} onChange={setUnitSystem} />
           <DroneController
@@ -77,7 +83,7 @@ export default function MissionPlannerWrapper() {
         </div>
         <div>
           <button
-            className="bg-blue-600 text-white px-3 py-0 rounded"
+            className="bg-blue-600 text-white px-3 py-0 rounded text-xs sm:text-base"
             onClick={() => setViewMode(viewMode === '2d' ? '3d' : '2d')}
           >
             Switch to {viewMode === '2d' ? '3D' : '2D'}
@@ -96,7 +102,7 @@ export default function MissionPlannerWrapper() {
             setUnitSystem={setUnitSystem}
             dronePosition={dronePosition}
             ref={mapRef} />
-          
+
         ) : (
           <CesiumMap
             waypoints={waypoints}
@@ -118,7 +124,7 @@ export default function MissionPlannerWrapper() {
         <WaypointList waypoints={waypoints} setWaypoints={setWaypoints} unitSystem={unitSystem} />
       </div>
 
-      <div className="absolute top-[4.5rem] left-4 z-30 w-72">
+      <div className="absolute top-[7.5rem] left-4 sm:left-6 md:left-8 lg:left-10 z-30 w-64 sm:w-72">
         <MetricsPanel waypoints={waypoints} setWaypoints={setWaypoints} setLogs={setLogs} />
       </div>
     </div>

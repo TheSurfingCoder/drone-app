@@ -52,18 +52,21 @@ export default function DroneController({ waypoints, setDronePosition, logs, set
     */
 
 
-    return (
-        <div>
-            <button onClick={handleStartMission}>
-                Start Mission
-            </button>
-            <button
+        return (
+            <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 text-xs sm:text-base w-max">
+              <button
+                onClick={handleStartMission}
+                className="bg-green-600 text-white px-2 py-1 rounded"
+              >
+                Simulate Mission
+              </button>
+              <button
                 onClick={handleClearWaypoints}
-            >
-                ❌ Clear Waypoints
-            </button>
-
-        </div>
-    );
+                className="bg-red-500 text-white px-2 py-1 rounded"
+              >
+                Clear Waypoints
+              </button>
+            </div>
+          );
 
 }
