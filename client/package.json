@@ -20,7 +20,7 @@
   },
   "type": "module",
   "scripts": {
-    "prepare": "husky install",
+    
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",

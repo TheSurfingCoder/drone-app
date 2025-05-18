@@ -2,7 +2,7 @@ import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import React from 'react';
 
-  const Marker = new L.Icon({
+  const waypoint = new L.Icon({
     iconUrl: '/marker-svgrepo-com.svg',
     iconSize: [40, 40],
   });
@@ -16,7 +16,7 @@ export default function WaypointMarker({ lat, lng, alt, index, unitSystem }) {
       : `${(altitude * 3.28084).toFixed(1)} ft`;
 
   return (
-    <Marker position={[lat, lng]} icon={Marker}>
+    <Marker position={[lat, lng]} icon={waypoint}>
       <Popup>
         <div>
           <strong>Waypoint {index + 1}
