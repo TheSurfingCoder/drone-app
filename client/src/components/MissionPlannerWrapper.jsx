@@ -10,6 +10,7 @@ import CurrentLocationButton from './CurrentLocationButton';
 import { Cartesian3 } from '@cesium/engine';
 import React from 'react';
 import RedBox from './Redbox';
+import BottomSheet from './BottomSheet';
 export default function MissionPlannerWrapper() {
   const [viewMode, setViewMode] = useState('2d');
   const [waypoints, setWaypoints] = useState([]);
@@ -58,18 +59,23 @@ export default function MissionPlannerWrapper() {
 
 
   return (
-    <div className="w-screen h-screen flex flex-col">
+    <div className="flex flex-col relative w-screen h-screen">
 
       {/* 🧭 Top Bar */}
-      <div className=" w-full h-auto sm:h-14
-    bg-white
-    px-4 sm:px-4 py-2 sm:py-0
-    flex flex-col sm:flex-row
-    justify-between sm:items-center
-    gap-2 sm:gap-0
-    z-[999]">
+      <div className=" w-full h-auto py-2 items-center bg-white px-4 flex flex-row justify-between gap-2 z-[999] sm:h-auto
+    
+     sm:px-4  sm:py-0
+     sm:flex-row
+     sm:items-center
+     sm:gap-0
+     sm:py-2
+    ">
+
         <div className="flex items-center gap-3">
-          <UnitToggle unitSystem={unitSystem} onChange={setUnitSystem} />
+          <div className="flex flex-col gap-1 items-center px-2 py-1 text-xs sm:flex sm:flex-row sm:items-center sm:gap-2 sm:text-base  ">
+            <UnitToggle unitSystem={unitSystem} onChange={setUnitSystem} />
+            <CurrentLocationButton onLocate={handleLocateMe} />
+          </div>
           <DroneController
             className="bg-green-600 text-white px-3 py-0 rounded"
             waypoints={waypoints}
@@ -79,7 +85,7 @@ export default function MissionPlannerWrapper() {
             setLogs={setLogs}
             handleClearWaypoints={clearWaypoints}
           />
-          <CurrentLocationButton onLocate={handleLocateMe} />
+
         </div>
         <div>
           <button
@@ -92,7 +98,7 @@ export default function MissionPlannerWrapper() {
       </div>
 
       {/* 🗺 Map View (with top bar padding) */}
-      <div className=" relative flex-1">
+      <div className=" flex-1">
         {console.trace("🟦 Div wrapper for 2D/3D map rendered")}
         {viewMode === '2d' ? (
           <MapComponent
@@ -116,17 +122,22 @@ export default function MissionPlannerWrapper() {
 
       {/* 📍 Floating Panels */}
 
-      <div className="absolute bottom-4 right-4 z-30 w-80">
+      <div className="sm:absolute sm:bottom-4 sm:left-4 sm:z-30 sm:w-80 sm:block hidden">
         <LogPanel logs={logs} clearLogs={clearLogs} />
       </div>
 
-      <div className="absolute top-[4.5rem] right-4 z-30 w-80">
+      <div className="sm:absolute sm:top-[4.5rem] sm:right-4 sm:z-30 sm:w-80 hidden sm:block">
         <WaypointList waypoints={waypoints} setWaypoints={setWaypoints} unitSystem={unitSystem} />
       </div>
 
-      <div className="absolute top-[7.5rem] left-4 sm:left-6 md:left-8 lg:left-10 z-30 w-64 sm:w-72">
+      <div className="sm:absolute sm:bottom-4 sm:right-4 sm:block hidden">
         <MetricsPanel waypoints={waypoints} setWaypoints={setWaypoints} setLogs={setLogs} />
       </div>
+
+
+
+
+
     </div>
   );
 }

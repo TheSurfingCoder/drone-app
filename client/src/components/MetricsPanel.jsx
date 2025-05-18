@@ -47,9 +47,6 @@ export default function MetricsPanel({ waypoints, setWaypoints, setLogs }) {
 
     return (
         <div style={{
-            position: 'absolute',
-            top: 20,
-            right: 20,
             background: 'white',
             padding: '10px',
             borderRadius: '8px',

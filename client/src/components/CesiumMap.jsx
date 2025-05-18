@@ -90,25 +90,25 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
   // Click handler to add waypoints
   useEffect(() => {
     if (!viewer) return;
-  
+
     const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
-  
+
     handler.setInputAction((movement) => {
       const pickedCartesian = viewer.scene.pickPosition(movement.position);
       if (!pickedCartesian) {
         console.warn("❌ Could not determine clicked position.");
         return;
       }
-  
+
       const carto = Cartographic.fromCartesian(pickedCartesian);
       const lat = CesiumMath.toDegrees(carto.latitude);
       const lng = CesiumMath.toDegrees(carto.longitude);
       const groundHeight = carto.height ?? 0;
-  
+
       const height = 50; // Default height (can be edited via AltitudeSlider)
       const groundPosition = pickedCartesian;
       const elevatedPosition = Cartesian3.fromDegrees(lng, lat, groundHeight + height);
-  
+
       setWaypoints((prev) => [
         ...prev,
         {
@@ -120,14 +120,14 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
           elevatedPosition,
         },
       ]);
-     
+
     }, ScreenSpaceEventType.LEFT_CLICK);
-    
+
     return () => {
       handler.destroy();
     };
   }, [viewer, setWaypoints]);
-  
+
 
 
 
@@ -146,7 +146,7 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
         // 2. Add default Cesium imagery (e.g. Bing Aerial with labels)
         const worldImagery = await createWorldImageryAsync();
         imageryLayers.addImageryProvider(worldImagery);
-      } 
+      }
     };
 
     setupLayers();
@@ -240,22 +240,23 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
   console.log("waypoints", waypoints)
 
   return (
-    <div id="cesium map main div" className="relative w-full h-full z-0 bg-red-100">
+    <div id="cesium map main div" className="relative w-full h-full bg-red-100">
       {console.trace("🟥 CesiumMap wrapper div rendered")}
-      <Layers
-        mapMode={mapMode}
-        setMapMode={setMapMode}
-        showOSMBuildings={showOSMBuildings}
-        toggleOSMBuildings={() => setShowOSMBuildings(prev => !prev)}
-      />
+      <div className="absolute top-4 left-0 right-0 flex flex-row gap-2 px-4 justify-center z-30">
+        <Layers
+          mapMode={mapMode}
+          setMapMode={setMapMode}
+          showOSMBuildings={showOSMBuildings}
+          toggleOSMBuildings={() => setShowOSMBuildings(prev => !prev)}
+        />
 
-      {viewerRef.current?.cesiumElement && (
-        <SunControlPanel onDateTimeChange={handleSunDateTimeChange} />
-      )}
-
+        {viewerRef.current?.cesiumElement && (
+          <SunControlPanel onDateTimeChange={handleSunDateTimeChange} />
+        )}
+      </div>
       <Viewer
         ref={viewerRef}
-        className="absolute inset-0 z-0"
+        className="border-red-500 border-2 h-full w-full z-0"
         baseLayerPicker={false}
         timeline={false}
         sceneModePicker={false}

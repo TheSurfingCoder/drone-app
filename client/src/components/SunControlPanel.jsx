@@ -39,7 +39,7 @@ export default function SunControlPanel({ onDateTimeChange }) {
   };
 
   return (
-    <div className="absolute top-4 right-1/2 z-50 bg-white px-3 py-2 rounded shadow text-sm">
+    <div className="bg-white px-3 py-2 rounded shadow text-xs">
       <label className="block font-medium text-gray-700 mb-1">Simulate Sun Conditions</label>
       <div className="flex flex-col gap-2">
         <input type="date" value={date} onChange={handleDateChange} />

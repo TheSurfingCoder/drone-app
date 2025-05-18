@@ -3,16 +3,13 @@ import React from "react";
 export default function Layers({ mapMode, setMapMode, showOSMBuildings, toggleOSMBuildings }) {
   return (
     <div
-      style={{
-        position: "absolute",
-        top: 200,
-        left: 10,
-        zIndex: 100,
-        background: "rgba(255, 255, 255, 0.9)",
-        padding: "0.5rem",
-        borderRadius: "0.5rem",
-        fontSize: "14px",
-      }}
+    className="
+    
+    bg-white/90
+    p-2 rounded
+    text-xs
+    sm:text-base
+  "
     >
       <div>
         <label>

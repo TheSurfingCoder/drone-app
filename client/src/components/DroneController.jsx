@@ -56,13 +56,13 @@ export default function DroneController({ waypoints, setDronePosition, logs, set
             <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 text-xs sm:text-base w-max">
               <button
                 onClick={handleStartMission}
-                className="bg-green-600 text-white px-2 py-1 rounded"
+                className="bg-green-600 text-white "
               >
                 Simulate Mission
               </button>
               <button
                 onClick={handleClearWaypoints}
-                className="bg-red-500 text-white px-2 py-1 rounded"
+                className="bg-red-500 text-white "
               >
                 Clear Waypoints
               </button>
