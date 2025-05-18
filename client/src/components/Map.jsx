@@ -16,8 +16,8 @@ const MapComponent = forwardRef(({ waypoints, setWaypoints, unitSystem, dronePos
   const [terrainProvider, setTerrainProvider] = useState(null);
 
   const droneIcon = new L.Icon({
-    iconUrl: droneIconSvg,
-    iconSize: [30, 30],
+    iconUrl: '/drone-svgrepo-com.svg',
+    iconSize: [40, 40],
   });
 
  
