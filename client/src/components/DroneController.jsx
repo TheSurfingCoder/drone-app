@@ -64,7 +64,7 @@ export default function DroneController({ waypoints, setDronePosition, logs, set
                 onClick={handleClearWaypoints}
                 className="bg-red-500 text-white "
               >
-                Clear Waypoints
+                Clear All
               </button>
             </div>
           );

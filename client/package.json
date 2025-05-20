@@ -20,7 +20,6 @@
   },
   "type": "module",
   "scripts": {
-    
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
@@ -51,6 +50,7 @@
     "@turf/turf": "^7.2.0",
     "cesium": "^1.114.0",
     "leaflet": "^1.9.4",
+    "lucide-react": "^0.511.0",
     "luxon": "^3.6.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

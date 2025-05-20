@@ -8,7 +8,7 @@ import React from 'react';
   });
 
 
-export default function WaypointMarker({ lat, lng, alt, index, unitSystem }) {
+export default function WaypointMarker({ lat, lng, alt, index, unitSystem, onDragEnd }) {
   const altitude = alt ?? 0;
   const formattedAlt =
     unitSystem === 'metric'
@@ -16,7 +16,14 @@ export default function WaypointMarker({ lat, lng, alt, index, unitSystem }) {
       : `${(altitude * 3.28084).toFixed(1)} ft`;
 
   return (
-    <Marker position={[lat, lng]} icon={waypoint}>
+    <Marker position={[lat, lng]} icon={waypoint} draggable={true}
+    eventHandlers={{
+      dragend: (e) => {
+        const marker = e.target
+        const { lat, lng } = marker.getLatLng()
+        onDragEnd(lat, lng)
+      },
+    }}>
       <Popup>
         <div>
           <strong>Waypoint {index + 1}
