@@ -50,6 +50,7 @@
     "@turf/turf": "^7.2.0",
     "cesium": "^1.114.0",
     "leaflet": "^1.9.4",
+    "leaflet-polylinedecorator": "^1.6.0",
     "lucide-react": "^0.511.0",
     "luxon": "^3.6.1",
     "react": "^19.1.0",

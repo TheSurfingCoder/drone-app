@@ -13,6 +13,10 @@ import RedBox from './Redbox';
 import BottomSheet from './BottomSheet';
 import QuickAccessToolbar from './QuickAccessToolbar';
 import ModernStatusPill from './ModernStatusPill';
+import { calculateHeading } from '../utils/headingUtils' // we'll create this next
+import TargetWaypointModal from './TargetWayPointModal';
+
+
 export default function MissionPlannerWrapper() {
   const [viewMode, setViewMode] = useState('2d');
   const [waypoints, setWaypoints] = useState([]);
@@ -23,6 +27,9 @@ export default function MissionPlannerWrapper() {
   const viewerRef = useRef(null);
   const [mapMode, setMapMode] = useState('waypoint')
   const [targets, setTargets] = useState([])
+  const [showTargetModal, setShowTargetModal] = useState(false)
+  const [targetPendingFocus, setTargetPendingFocus] = useState(null)
+
 
   const handleLocateMe = (lat, lng) => {
     console.log(`📍 Handling locate for ${viewMode.toUpperCase()}:`, lat, lng);
@@ -63,20 +70,11 @@ export default function MissionPlannerWrapper() {
 
 
   return (
-    <div className="flex flex-col relative w-screen h-screen ">
-
+    <div className="flex flex-col relative w-screen h-screen">
       {/* 🧭 Top Bar */}
-      <div className="relative w-full h-[56px] sm:h-auto py-2 items-center bg-white px-4 flex flex-row justify-between gap-2 z-99 sm:h-auto
-    
-     sm:px-4  sm:py-0
-     sm:flex-row
-     sm:items-center
-     sm:gap-0
-     sm:py-2
-      ">
-
+      <div className="relative w-full h-[56px] sm:h-auto py-2 items-center bg-white px-4 flex flex-row justify-between gap-2 z-99 sm:h-auto sm:px-4 sm:py-0 sm:flex-row sm:items-center sm:gap-0 sm:py-2">
         <div className="flex items-center gap-3">
-          <div className="flex flex-col gap-1 items-center px-2 py-1 text-xs sm:flex sm:flex-row sm:items-center sm:gap-2 sm:text-base  ">
+          <div className="flex flex-col gap-1 items-center px-2 py-1 text-xs sm:flex sm:flex-row sm:items-center sm:gap-2 sm:text-base">
             <UnitToggle unitSystem={unitSystem} onChange={setUnitSystem} />
             <CurrentLocationButton onLocate={handleLocateMe} />
           </div>
@@ -89,7 +87,6 @@ export default function MissionPlannerWrapper() {
             setLogs={setLogs}
             handleClearWaypoints={clearWaypoints}
           />
-
         </div>
         <div>
           <button
@@ -99,15 +96,13 @@ export default function MissionPlannerWrapper() {
             Switch to {viewMode === '2d' ? '3D' : '2D'}
           </button>
         </div>
-        <div
-        className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 z-[900]`}
-      >        <ModernStatusPill waypoints={waypoints} unitSystem={unitSystem}></ModernStatusPill>
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-[900]">
+          <ModernStatusPill waypoints={waypoints} unitSystem={unitSystem} />
+        </div>
       </div>
-      </div>
-
+  
       {/* 🗺 Map View (with top bar padding) */}
-      <div className=" flex-1">
-        {console.trace("🟦 Div wrapper for 2D/3D map rendered")}
+      <div className="flex-1">
         {viewMode === '2d' ? (
           <MapComponent
             waypoints={waypoints}
@@ -116,10 +111,12 @@ export default function MissionPlannerWrapper() {
             setTargets={setTargets}
             unitSystem={unitSystem}
             setUnitSystem={setUnitSystem}
+            setTargetPendingFocus={setTargetPendingFocus}
+            setShowTargetModal={setShowTargetModal}
             dronePosition={dronePosition}
             mapMode={mapMode}
-            ref={mapRef} />
-
+            ref={mapRef}
+          />
         ) : (
           <CesiumMap
             waypoints={waypoints}
@@ -131,26 +128,45 @@ export default function MissionPlannerWrapper() {
           />
         )}
       </div>
-
+  
+      {/* ✅ Modal rendered globally, not inside map logic */}
+      {showTargetModal && (
+        <TargetWaypointModal
+          waypoints={waypoints}
+          onConfirm={(selectedIds) => {
+            const targetId = Date.now()
+            const updatedWaypoints = waypoints.map((wp) =>
+              selectedIds.includes(wp.id)
+                ? {
+                    ...wp,
+                    focusTargetId: targetId,
+                    heading: calculateHeading(
+                      wp.lat,
+                      wp.lng,
+                      targetPendingFocus.lat,
+                      targetPendingFocus.lng
+                    ),
+                  }
+                : wp
+            )
+  
+            setWaypoints(updatedWaypoints)
+            setTargets((prev) => [...prev, { ...targetPendingFocus, id: targetId }])
+            setTargetPendingFocus(null)
+            setShowTargetModal(false)
+          }}
+          onCancel={() => {
+            setTargetPendingFocus(null)
+            setShowTargetModal(false)
+          }}
+        />
+      )}
+  
       {/* 📍 Floating Panels */}
-
-      <QuickAccessToolbar
-        onModeChange={setMapMode}
-        currentMode={mapMode}
-      ></QuickAccessToolbar>
-
-
-
-     
-
-
-
-
-
-
-
+      <QuickAccessToolbar onModeChange={setMapMode} currentMode={mapMode} />
     </div>
-  );
+  )
+  
 }
 
 
