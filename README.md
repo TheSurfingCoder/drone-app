@@ -59,8 +59,8 @@ I wanted to challenge myself to build an interactive geospatial planning tool us
 
 ## 🖼 Screenshot
 **2D Planner View**
-![2D Map Screenshot](./public/2D-Screenshot.png)
+![2D Map Screenshot](./client/public/2D-Screenshot.png)
 
 **3D Planner View**
-![3D Map Screenshot](./public/3D-Screenshot.png)
+![3D Map Screenshot](./client/public/3D-Screenshot.png)
 
