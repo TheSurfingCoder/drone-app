@@ -39,7 +39,6 @@ import {
 import WaypointBillboardOverlay from "./WaypointBillboardOverlay";
 import Layers from "./Layers";
 import SunControlPanel from "./SunControlPanel";
-import SunMarker from './SunMarker';
 
 
 Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_TOKEN;

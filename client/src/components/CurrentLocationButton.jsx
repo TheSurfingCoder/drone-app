@@ -22,7 +22,7 @@ export default function CurrentLocationButton({ onLocate }) {
   return (
     <button
       onClick={handleClick}
-      className="w-full bg-gray-200 rounded px-1 py-.5 text-xs sm:text-base"
+      className="w-full bg-gray-200 rounded px-1 py-.5 text-xs sm:text-base sm: w-max "
     >
       📍 My Location
     </button>

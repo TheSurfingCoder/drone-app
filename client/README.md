@@ -1,112 +1,66 @@
-# cesium-vite-example
+# 2D/3D Drone Planner
 
-A minimal recommended setup for an applications using [Cesium](https://cesium.com) with [Vite](https://vitejs.dev/).
+_Last updated: May 21, 2025_
 
-If you are using Webpack instead of Vite, check out our [`cesium-webpack-example`](https://github.com/CesiumGS/cesium-webpack-example) repo.
+## 🌐 Live Demo
 
-## UI framework support
+You can try the app live here:  
+👉 [https://drone-app-q23f.vercel.app](https://drone-app-q23f.vercel.app)
 
-This example was created to be the lowest common denominator in the Vite ecosystem and targets Vanilla JS. The same configuration has been tested with other UI frameworks in Vite (like Vue) by adding the relevant plugin. If you run into framework specific problems please [open an issue](https://github.com/CesiumGS/cesium-vite-example/issues/new).
+## 📖 Overview
 
-If you create a new Vite project with [`create-vite`](https://vitejs.dev/guide/#scaffolding-your-first-vite-project) you can combine the `plugins` that it adds in `vite.config.js` with the ones in this example configuration.
+This tool was designed for hobbyist and commercial drone pilots to pre-plan detailed flight paths in both 2D and 3D environments. It allows users to drop waypoints, simulate drone paths, and visualize terrain and urban environments in real time.
 
-## Running this application
+The 3D map is powered by **CesiumJS**, while the 2D interface uses **Leaflet**.
 
-```sh
-npm install
-npm run dev
-```
+> This project is part of my journey transitioning into full-time software engineering. It combines my interest in geospatial interfaces with modern web development tools.
 
-For the built, production version
+## ⚙️ Tech Stack
 
-```sh
-npm run build
-npm run preview
-```
+### Frontend
+- **Framework:** React  
+- **Dev Server & Bundling:** Vite  
+- **Styling:** Tailwind CSS  
+- **2D Map Engine:** Leaflet via `react-leaflet`  
+- **3D Globe Engine:** CesiumJS (accessing the Google Photorealistic 3D Tiles and OSM Buildings through Cesium Ion)
+- **Mapping Integrations:**  
+  - [CesiumJS](https://cesium.com/platform/cesiumjs/) provides a photorealistic global tileset and optional building metadata.
+  - [OpenStreetMap Buildings](https://cesium.com/learn/ion-sdk/osm-buildings/) (some buildings include height estimates, number of stories, and other metadata via community contributions).
 
-Navigate to `localhost:5173`. For the built version navigate to `localhost:4173`
+### Backend
+- Currently in progress (future plans include route saving, user accounts, and backend metrics).
 
-## Available scripts
+## 🔧 Rebuilding the Project (Optional)
 
-- `npm run eslint` - Lint this project
-- `npm run prettier` - Format all the code to a consistant style
-- `npm run prettier-check` - Check the format of code but do not change it
-- `npm run dev` - Starts the Vite development server server at `localhost:5173`
-- `npm run build` - Runs the Vite production build
-- `npm run preview` - Starts a local preview of the production build using [`vite preview`](https://vitejs.dev/guide/cli.html#vite-preview)
+You’re welcome to fork and rebuild this project!  
+**However**, it currently assumes front-end only deployment with no custom backend services.
 
-## Requiring Cesium in your application
+To host it yourself, you'll need:
 
-We recommend [importing named exports](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import) from the Cesium ES module, via the `import` keyword.
+1. A **Cesium Ion account** (free tier available)  
+   - This will give you access to the Google Photorealistic Tileset and OSM Buildings.
+2. A **`.env` file** with your Cesium access token  
+   - The frontend reads this at build time to initialize the Cesium viewer.
 
-### Import named modules from Cesium
+> Note: This project is still under active development. If you plan to extend or customize it, I recommend exploring the CesiumJS and Leaflet docs, as well as libraries like Resium and react-leaflet.
 
-```js
-import { Color } from "cesium";
-var c = Color.fromRandom();
-```
+## 🧠 Why I Built This
 
-### Import Cesium static asset files
+I wanted to challenge myself to build an interactive geospatial planning tool using real-world mapping data. This project also reflects my interest in autonomous systems and responsive interfaces — and serves as my flagship project as I transition from SaaS sales into full-stack engineering.
 
-```js
-import "cesium/Build/Cesium/Widgets/widgets.css";
-```
 
-## Cesium sub-packages
+## 🛠 Planned Features / TODO
+- Backend integration (saving/loading missions)
+- Mission export (GeoJSON or DJI-compatible)
+- Per-waypoint speed and heading settings
+- Altitude profile visualizations
+- UI/UX cleanup + mobile responsiveness
 
-CesiumJS requires a few static files to be hosted on your server, like web workers and SVG icons. This example is already set up to copy these directories if you install the whole `cesium` package.
 
-```js
-viteStaticCopy({
-  targets: [
-    { src: `${cesiumSource}/ThirdParty`, dest: cesiumBaseUrl },
-    { src: `${cesiumSource}/Workers`, dest: cesiumBaseUrl },
-    { src: `${cesiumSource}/Assets`, dest: cesiumBaseUrl },
-    { src: `${cesiumSource}/Widgets`, dest: cesiumBaseUrl },
-  ],
-}),
-```
+## 🖼 Screenshot
+**2D Planner View**
+![2D Map Screenshot](./public/2D-Screenshot.png)
 
-However if you only install `@cesium/engine` then you should change the paths in [`vite.config.js`](./vite.config.js) to the ones below:
+**3D Planner View**
+![3D Map Screenshot](./public/3D-Screenshot.png)
 
-```js
-viteStaticCopy({
-  targets: [
-    { src: 'node_modules/@cesium/engine/Build/Workers', dest: cesiumBaseUrl },
-    { src: 'node_modules/@cesium/engine/Build/ThirdParty', dest: cesiumBaseUrl },
-    { src: 'node_modules/@cesium/engine/Source/Assets', dest: cesiumBaseUrl },
-  ],
-}),
-```
-
-Additionally you will have to import a different widgets css file in `src/main.js`.
-
-```js
-// Change this import
-import "cesium/Build/Cesium/Widgets/widgets.css";
-
-// To this one from the cesium/engine package
-import "@cesium/engine/Source/Widget/CesiumWidget.css";
-```
-
-## CesiumJS before version `1.114`
-
-If you are using a version of CesiumJS before `1.114` you will need to modify the config to tell it to ignore some external node dependencies. Add the `build` section below:
-
-```js
-  build: {
-    rollupOptions: {
-      external: ["http", "https", "url", "zlib"],
-    },
-  },
-```
-
-See cesium PR [#11773](https://github.com/CesiumGS/cesium/pull/11773) for more information
-
-## Contributions
-
-Pull requests are appreciated. Please use the same [Contributor License Agreement (CLA)](https://github.com/CesiumGS/cesium/blob/master/CONTRIBUTING.md) used for [Cesium](https://cesium.com/).
-
----
-
-Developed by the Cesium team.
