@@ -12,7 +12,7 @@ Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_TOKEN;
 
 
 const MapComponent = forwardRef(({ waypoints, setWaypoints, unitSystem, dronePosition, targets, setTargets, mapMode, setTargetPendingFocus, setShowTargetModal, onTargetClick  }, ref) => {
-  const startPosition = [37.7749, -122.4194]; // SF
+  const startPosition = [20, 0]; 
   const [terrainProvider, setTerrainProvider] = useState(null);
 
   const droneIcon = new L.Icon({
@@ -43,7 +43,7 @@ const MapComponent = forwardRef(({ waypoints, setWaypoints, unitSystem, dronePos
       <MapContainer
         ref={ref}
         center={startPosition}
-        zoom={13}
+        zoom={2}
         zoomControl={false}
         scrollWheelZoom={true}
         whenCreated={(map) => 

@@ -6,6 +6,8 @@ import { recalculateHeadings } from '../utils/recalculateHeadings'
 import 'leaflet-polylinedecorator'
 import PolylineDecorator from './PolylineDecorator.jsx'
 import React from 'react'
+import { Cartesian3 } from 'cesium'
+
 
 export default function WaypointManager({
   waypoints,
@@ -24,14 +26,19 @@ export default function WaypointManager({
       const { lat, lng } = e.latlng
       let groundHeight = 0
       let height = 50
-      let groundPosition = 0
-      let elevatedPosition = 0
+      let groundPosition
+      let elevatedPosition
 
       if (terrainProvider) {
         try {
           groundHeight = await getCesiumAltitude(terrainProvider, lat, lng)
+
+           groundPosition = Cartesian3.fromDegrees(lng, lat, groundHeight)
+           elevatedPosition = Cartesian3.fromDegrees(lng, lat, groundHeight + height)
         } catch (err) {
           console.warn('Failed to get terrain height, defaulting to 0', err)
+          groundPosition = Cartesian3.fromDegrees(lng, lat, 0)
+          elevatedPosition = Cartesian3.fromDegrees(lng, lat, height)
         }
       }
 
@@ -150,7 +157,7 @@ export default function WaypointManager({
           onClick={(targetId) => {
             if (onTargetClick) onTargetClick(targetId)
           }}
-          
+
         />
       ))}
     </>

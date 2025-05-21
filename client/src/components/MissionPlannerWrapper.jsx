@@ -31,7 +31,7 @@ export default function MissionPlannerWrapper() {
   const [showTargetModal, setShowTargetModal] = useState(false)
   const [targetPendingFocus, setTargetPendingFocus] = useState(null)
   const [selectedTargetId, setSelectedTargetId] = useState(null)
-
+  
 
   const selectedTarget = targets.find((t) => t.id === selectedTargetId)
   const targetIndex = targets.findIndex((t) => t.id === selectedTargetId)
@@ -81,7 +81,7 @@ export default function MissionPlannerWrapper() {
       {/* 🧭 Top Bar */}
       <div className="relative w-full h-[56px] sm:h-auto py-2 items-center bg-white px-4 flex flex-row justify-between gap-2 z-99 sm:h-auto sm:px-4 sm:py-0 sm:flex-row sm:items-center sm:gap-0 sm:py-2">
         <div className="flex items-center gap-3">
-          <div className="flex flex-col gap-1 items-center px-2 py-1 text-xs sm:flex sm:flex-row sm:items-center sm:gap-2 sm:text-base">
+          <div className="w-30 flex flex-col gap-1 items-center px-2 py-1 text-xs sm:flex sm:flex-row sm:items-center sm:gap-2 sm:text-base">
             <UnitToggle unitSystem={unitSystem} onChange={setUnitSystem} />
             <CurrentLocationButton onLocate={handleLocateMe} />
           </div>
