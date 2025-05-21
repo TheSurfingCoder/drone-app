@@ -16,13 +16,13 @@ import ModernStatusPill from './ModernStatusPill';
 import { calculateHeading } from '../utils/headingUtils' // we'll create this next
 import TargetWaypointModal from './TargetWayPointModal';
 import { recalculateHeadings } from '../utils/recalculateHeadings';
-
+import CountdownModal from './CountdownModal';
 
 export default function MissionPlannerWrapper() {
   const [viewMode, setViewMode] = useState('2d');
   const [waypoints, setWaypoints] = useState([]);
   const [unitSystem, setUnitSystem] = useState('metric');
-  const [dronePosition, setDronePosition] = useState([37.7749, -122.4194]); // SF default
+  const [dronePosition, setDronePosition] = useState(null); // SF default
   const [logs, setLogs] = useState([]);
   const mapRef = useRef(null);
   const viewerRef = useRef(null);
@@ -31,7 +31,9 @@ export default function MissionPlannerWrapper() {
   const [showTargetModal, setShowTargetModal] = useState(false)
   const [targetPendingFocus, setTargetPendingFocus] = useState(null)
   const [selectedTargetId, setSelectedTargetId] = useState(null)
-  
+  const [showCountdown, setShowCountdown] = useState(false)
+  const [countdownMessage, setCountdownMessage] = useState("Starting in")
+
 
   const selectedTarget = targets.find((t) => t.id === selectedTargetId)
   const targetIndex = targets.findIndex((t) => t.id === selectedTargetId)
@@ -93,6 +95,9 @@ export default function MissionPlannerWrapper() {
             logs={logs}
             setLogs={setLogs}
             handleClearWaypoints={clearWaypoints}
+            showCountdown={showCountdown}
+            setShowCountdown={setShowCountdown}
+            setCountdownMessage={setCountdownMessage}
           />
         </div>
         <div>
@@ -121,6 +126,7 @@ export default function MissionPlannerWrapper() {
             setTargetPendingFocus={setTargetPendingFocus}
             setShowTargetModal={setShowTargetModal}
             dronePosition={dronePosition}
+            setDronePosition={setDronePosition}
             mapMode={mapMode}
             ref={mapRef}
             onTargetClick={(targetId) => {
@@ -135,11 +141,28 @@ export default function MissionPlannerWrapper() {
             setUnitSystem={setUnitSystem}
             ref={viewerRef}
             mapMode={mapMode}
+            dronePosition={dronePosition}
+            setDronePosition={setDronePosition}
           />
         )}
       </div>
 
       {/* ✅ Modal rendered globally, not inside map logic */}
+      {showCountdown && (
+        <CountdownModal
+          message={countdownMessage}
+          seconds={countdownMessage === "Starting in" ? 3 : 2}
+          onComplete={() => {
+            if (countdownMessage === "Starting in") {
+              setDronePosition([waypoints[0].lat, waypoints[0].lng])
+              // mission simulation logic
+            }
+            setShowCountdown(false)
+          }}
+        />
+      )}
+
+
       {showTargetModal && targetPendingFocus && (
         <TargetWaypointModal
           waypoints={waypoints}

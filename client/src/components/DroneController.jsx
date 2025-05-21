@@ -1,84 +1,106 @@
-// drone component with logic from droneMovement.js
-//drone component is receiving props from map
-import { moveToward } from "../utils/droneMovement";
-import React, { useState } from "react";
-export default function DroneController({ waypoints, setDronePosition, logs, setLogs, handleClearWaypoints }) {
+import React, { useEffect, useState } from 'react';
+import { moveToward } from '../utils/droneMovement';
 
-  const [clicked, setClicked] = useState(false)
+export default function DroneController({
+  waypoints,
+  setDronePosition,
+  dronePosition,
+  logs,
+  setLogs,
+  handleClearWaypoints,
+  showCountdown,
+  setShowCountdown,
+  setCountdownMessage,
+}) {
+  const [clicked, setClicked] = useState(false);
 
+  const handleStartMission = () => {
+    setClicked(true);
+    setTimeout(() => setClicked(false), 150);
 
-  function handleStartMission() {
-    console.log("Starting mission...");
-    console.log("Waypoints:", waypoints);
-    const time = new Date().toLocaleTimeString(); //creating time for log
-    
+    if (!waypoints || waypoints.length === 0) {
+      setCountdownMessage(
+        'There are no waypoints. Please click on the map to set some.'
+      );
+      setShowCountdown(true);
+      return;
+    }
 
+    setCountdownMessage('Starting in');
+    setShowCountdown(true);
+  };
 
-    //for button
-    setClicked(true)
-    setTimeout(() => setClicked(false), 150) // 150ms = quick flash
+  useEffect(() => {
+    // Only start mission after countdown completes and waypoints exist
+    if (showCountdown) return;
+    if (!waypoints || waypoints.length === 0) return;
 
-
-
-    //drone movement 
-    if (waypoints.length === 0) return; //this will ensure nothing happens if we click start and the waypoints array is empty
-    setLogs(prev => [...prev, `[${time}]🟢 Starting mission...`]); //Mission Logs
     let currentIndex = 0;
-    let currentTarget = [waypoints[0].lat, waypoints[0].lng]
+    let currentTarget = [waypoints[0].lat, waypoints[0].lng];
+    let currentPosition = [waypoints[0].lat, waypoints[0].lng];
+    setDronePosition(currentPosition);
 
     const interval = setInterval(() => {
+      const nextPos = moveToward(currentPosition, currentTarget);
+      currentPosition = nextPos;
+      setDronePosition(nextPos);
 
-      const now = new Date(); // Create a Date object.
-      const time = now.toLocaleTimeString(); // //i'm calling it within setInterval because i need a new time every 30 milliseconds
-      setDronePosition(prev => {
-        const nextPos = moveToward(prev, currentTarget)
+      const now = new Date().toLocaleTimeString();
 
-        // Check if drone has arrived at the current target
-        if (nextPos[0] === currentTarget[0] &&
-          nextPos[1] === currentTarget[1]
-        ) {
-          currentIndex++;
-          setLogs(prev => [...prev, `[${time}] ✅ Arrived at waypoint ${currentIndex}`]); //Mission logs
-          console.log(logs)
-          if (currentIndex >= waypoints.length) {
-            clearInterval(interval);
-            console.log("Mission complete")
-            setLogs(prev => [...prev, `[${time}]🏁 Mission complete`]);
-            return nextPos;
-          }
+      // Arrived at waypoint
+      if (
+        nextPos[0] === currentTarget[0] &&
+        nextPos[1] === currentTarget[1]
+      ) {
+        currentIndex++;
+        setLogs((prev) => [
+          ...prev,
+          `[${now}] ✅ Arrived at waypoint ${currentIndex}`,
+        ]);
 
-          currentTarget = [waypoints[currentIndex].lat, waypoints[currentIndex].lng];
+        if (currentIndex >= waypoints.length) {
+          clearInterval(interval);
+          setLogs((prev) => [
+            ...prev,
+            `[${now}] 🏁 Mission complete`,
+          ]);
+          return;
         }
-        return nextPos;
 
-      })
-    }, 30)
+        currentTarget = [
+          waypoints[currentIndex].lat,
+          waypoints[currentIndex].lng,
+        ];
+      }
+    }, 30);
 
-  }
-  /*
-      1. checks waypoints length. if it's 0 then return and do nothing
-      2. setDroneposition is actually changing the drone's positon and it's running every 30 milliseconds
-      3. so every 30 milliseconds we're reutrning an array from nextPos which is setting the drone position and moving it
-  */
+    return () => clearInterval(interval);
+  }, [showCountdown]);
+    /*
+        1. checks waypoints length. if it's 0 then return and do nothing
+        2. setDroneposition is actually changing the drone's positon and it's running every 30 milliseconds
+        3. so every 30 milliseconds we're reutrning an array from nextPos which is setting the drone position and moving it
+    */
 
 
-  return (
-    <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 text-xs sm:text-base w-max">
-      <button
-        onClick={handleStartMission}
-        className={`${clicked ? 'bg-green-700' : 'bg-green-600'
-          } text-white px-1 py-.5 rounded-md shadow-sm transition-colors duration-100`}
-      >
-        Simulate Mission
-      </button>
+    return (
+      <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 text-xs sm:text-base w-max">
+        <button
+          onClick={handleStartMission}
+          className={`${clicked ? 'bg-green-700' : 'bg-green-600'
+            } text-white px-1 py-.5 rounded-md shadow-sm transition-colors duration-100`}
+        >
+          Simulate Mission
+        </button>
 
-      <button
-        onClick={handleClearWaypoints}
-        className="bg-red-500 text-white px-1 py-.5 rounded-md shadow-sm transition-colors duration-100 "
-      >
-        Clear All
-      </button>
-    </div>
-  );
+        <button
+          onClick={handleClearWaypoints}
+          className="bg-red-500 text-white px-1 py-.5 rounded-md shadow-sm transition-colors duration-100 "
+        >
+          Clear All
+        </button>
+      </div>
+    );
 
+  
 }

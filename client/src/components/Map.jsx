@@ -11,8 +11,8 @@ Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_TOKEN;
 
 
 
-const MapComponent = forwardRef(({ waypoints, setWaypoints, unitSystem, dronePosition, targets, setTargets, mapMode, setTargetPendingFocus, setShowTargetModal, onTargetClick  }, ref) => {
-  const startPosition = [20, 0]; 
+const MapComponent = forwardRef(({ waypoints, setWaypoints, unitSystem, dronePosition, targets, setTargets, mapMode, setTargetPendingFocus, setShowTargetModal, onTargetClick }, ref) => {
+  const startPosition = [20, 0];
   const [terrainProvider, setTerrainProvider] = useState(null);
 
   const droneIcon = new L.Icon({
@@ -20,7 +20,7 @@ const MapComponent = forwardRef(({ waypoints, setWaypoints, unitSystem, dronePos
     iconSize: [40, 40],
   });
 
- 
+
 
   useEffect(() => {
     const loadTerrain = async () => {
@@ -35,7 +35,7 @@ const MapComponent = forwardRef(({ waypoints, setWaypoints, unitSystem, dronePos
     loadTerrain();
   }, []);
 
-  
+
 
 
   return (
@@ -46,9 +46,9 @@ const MapComponent = forwardRef(({ waypoints, setWaypoints, unitSystem, dronePos
         zoom={2}
         zoomControl={false}
         scrollWheelZoom={true}
-        whenCreated={(map) => 
+        whenCreated={(map) =>
           console.log("Leaflet map created:", map) // ✅ Add this
-          } // bind map ref on creation
+        } // bind map ref on creation
         className='fullscreen-map z-0'
       >
         <TileLayer
@@ -64,12 +64,12 @@ const MapComponent = forwardRef(({ waypoints, setWaypoints, unitSystem, dronePos
           setTargets={setTargets}
           mapMode={mapMode}
           setTargetPendingFocus={setTargetPendingFocus} // ✅ pass down
-        setShowTargetModal={setShowTargetModal}       // ✅ pass down
-        onTargetClick={onTargetClick}
-        />
-        <Marker position={dronePosition} icon={droneIcon}>
+          setShowTargetModal={setShowTargetModal}       // ✅ pass down
+          onTargetClick={onTargetClick}
+        />{dronePosition && (<Marker position={dronePosition} icon={droneIcon}>
           <Popup>Drone</Popup>
-        </Marker>
+        </Marker>)}
+
       </MapContainer>
     </div>
   );

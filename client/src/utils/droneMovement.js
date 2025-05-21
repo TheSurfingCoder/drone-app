@@ -3,7 +3,11 @@
 // src/utils/droneMovement.js
 
 export function moveToward(current, target, stepSize = 0.0001) {
-    const [curLat, curLng] = current;
+  if (!Array.isArray(current) || !Array.isArray(target)) {
+    throw new Error("moveToward expects [lat, lng] arrays for both current and target")
+  } 
+  
+  const [curLat, curLng] = current;
     const [targetLat, targetLng] = target;
   
     const dLat = targetLat - curLat;
