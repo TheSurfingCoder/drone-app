@@ -1,10 +1,11 @@
 import { useMapEvents, Polyline } from 'react-leaflet'
 import WaypointMarker from './WaypointMarker.jsx'
-import { getCesiumAltitude } from '../utils/getCesiumAltitude'
-import React from 'react'
 import TargetMarker from './TargetMarker.jsx'
+import { getCesiumAltitude } from '../utils/getCesiumAltitude'
+import { recalculateHeadings } from '../utils/recalculateHeadings'
 import 'leaflet-polylinedecorator'
-import PolylineDecorator from './PolylineDecorator'
+import PolylineDecorator from './PolylineDecorator.jsx'
+import React from 'react'
 
 export default function WaypointManager({
   waypoints,
@@ -14,15 +15,15 @@ export default function WaypointManager({
   targets,
   setTargets,
   mapMode,
-  setShowTargetModal,
   setTargetPendingFocus,
+  setShowTargetModal,
+  onTargetClick
 }) {
   useMapEvents({
     click: async (e) => {
-      console.log("📍 Map clicked in mode:", mapMode) 
       const { lat, lng } = e.latlng
       let groundHeight = 0
-      let height = 0
+      let height = 50
       let groundPosition = 0
       let elevatedPosition = 0
 
@@ -35,7 +36,7 @@ export default function WaypointManager({
       }
 
       const newPoint = {
-        id: Date.now(), // ensures uniqueness
+        id: Date.now(),
         lat,
         lng,
         height,
@@ -47,14 +48,14 @@ export default function WaypointManager({
       }
 
       if (mapMode === 'waypoint') {
-        setWaypoints((prev) => [...prev, newPoint])
+        setWaypoints((prev) =>
+          recalculateHeadings([...prev, newPoint], targets)
+        )
       } else if (mapMode === 'target') {
-        console.log("🛠 Target mode: opening modal")
-
-        setTargetPendingFocus(newPoint)         // ⬅️ trigger modal
+        const newTargetId = Date.now() // ✅ generate unique ID early
+        setTargetPendingFocus({ ...newPoint, id: newTargetId }) // ✅ assign it here
         setShowTargetModal(true)
       }
-
       console.log('waypoints', waypoints)
     },
   })
@@ -72,12 +73,16 @@ export default function WaypointManager({
           elevatedPosition={wp.elevatedPosition}
           index={i}
           unitSystem={unitSystem}
-          heading={wp.heading} // ⬅️ pass heading to show arrow
+          heading={wp.heading}
           onDragEnd={async (newLat, newLng) => {
             let groundHeight = 0
             if (terrainProvider) {
               try {
-                groundHeight = await getCesiumAltitude(terrainProvider, newLat, newLng)
+                groundHeight = await getCesiumAltitude(
+                  terrainProvider,
+                  newLat,
+                  newLng
+                )
               } catch (err) {
                 console.warn('Failed to fetch terrain height on drag:', err)
               }
@@ -94,7 +99,7 @@ export default function WaypointManager({
                 groundPosition: 0,
                 height: groundHeight,
               }
-              return updated
+              return recalculateHeadings(updated, targets)
             })
           }}
         />
@@ -127,14 +132,25 @@ export default function WaypointManager({
         <TargetMarker
           key={target.id || i}
           position={[target.lat, target.lng]}
-          id={i}
+          id={target.id}
           onDragEnd={(id, newLat, newLng) => {
             setTargets((prev) => {
               const updated = [...prev]
               updated[id] = { ...updated[id], lat: newLat, lng: newLng }
               return updated
             })
+
+            setWaypoints((prevWaypoints) =>
+              recalculateHeadings(prevWaypoints, targets.map((t, i) =>
+                i === id ? { ...t, lat: newLat, lng: newLng } : t
+              ))
+            )
+
           }}
+          onClick={(targetId) => {
+            if (onTargetClick) onTargetClick(targetId)
+          }}
+          
         />
       ))}
     </>

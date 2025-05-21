@@ -15,6 +15,7 @@ import QuickAccessToolbar from './QuickAccessToolbar';
 import ModernStatusPill from './ModernStatusPill';
 import { calculateHeading } from '../utils/headingUtils' // we'll create this next
 import TargetWaypointModal from './TargetWayPointModal';
+import { recalculateHeadings } from '../utils/recalculateHeadings';
 
 
 export default function MissionPlannerWrapper() {
@@ -29,6 +30,12 @@ export default function MissionPlannerWrapper() {
   const [targets, setTargets] = useState([])
   const [showTargetModal, setShowTargetModal] = useState(false)
   const [targetPendingFocus, setTargetPendingFocus] = useState(null)
+  const [selectedTargetId, setSelectedTargetId] = useState(null)
+
+
+  const selectedTarget = targets.find((t) => t.id === selectedTargetId)
+  const targetIndex = targets.findIndex((t) => t.id === selectedTargetId)
+
 
 
   const handleLocateMe = (lat, lng) => {
@@ -100,7 +107,7 @@ export default function MissionPlannerWrapper() {
           <ModernStatusPill waypoints={waypoints} unitSystem={unitSystem} />
         </div>
       </div>
-  
+
       {/* 🗺 Map View (with top bar padding) */}
       <div className="flex-1">
         {viewMode === '2d' ? (
@@ -116,6 +123,9 @@ export default function MissionPlannerWrapper() {
             dronePosition={dronePosition}
             mapMode={mapMode}
             ref={mapRef}
+            onTargetClick={(targetId) => {
+              setSelectedTargetId(targetId)
+            }}
           />
         ) : (
           <CesiumMap
@@ -128,30 +138,30 @@ export default function MissionPlannerWrapper() {
           />
         )}
       </div>
-  
+
       {/* ✅ Modal rendered globally, not inside map logic */}
-      {showTargetModal && (
+      {showTargetModal && targetPendingFocus && (
         <TargetWaypointModal
           waypoints={waypoints}
+          targetId={targetPendingFocus.id} // ✅ new target ID
+          targetIndex={targets.length}     // ✅ next index
+          defaultSelectedWaypointIds={waypoints
+            .filter((wp) => wp.focusTargetId === targetPendingFocus.id)
+            .map((wp) => wp.id)}
           onConfirm={(selectedIds) => {
-            const targetId = Date.now()
-            const updatedWaypoints = waypoints.map((wp) =>
+            const waypointsWithTarget = waypoints.map((wp) =>
               selectedIds.includes(wp.id)
-                ? {
-                    ...wp,
-                    focusTargetId: targetId,
-                    heading: calculateHeading(
-                      wp.lat,
-                      wp.lng,
-                      targetPendingFocus.lat,
-                      targetPendingFocus.lng
-                    ),
-                  }
+                ? { ...wp, focusTargetId: targetPendingFocus.id }
                 : wp
             )
-  
+
+            const updatedWaypoints = recalculateHeadings(waypointsWithTarget, [
+              ...targets,
+              targetPendingFocus, // ✅ already has `id`
+            ])
+
             setWaypoints(updatedWaypoints)
-            setTargets((prev) => [...prev, { ...targetPendingFocus, id: targetId }])
+            setTargets((prev) => [...prev, targetPendingFocus])
             setTargetPendingFocus(null)
             setShowTargetModal(false)
           }}
@@ -161,12 +171,39 @@ export default function MissionPlannerWrapper() {
           }}
         />
       )}
-  
+
+
+      {selectedTargetId !== null && (
+        <TargetWaypointModal
+          waypoints={waypoints}
+          targetId={selectedTargetId}
+          targetIndex={targetIndex}
+          defaultSelectedWaypointIds={waypoints
+            .filter((wp) => wp.focusTargetId === selectedTargetId)
+            .map((wp) => wp.id)}
+          onConfirm={(selectedIds) => {
+            const updatedWaypoints = waypoints.map((wp) => {
+              if (selectedIds.includes(wp.id)) {
+                return { ...wp, focusTargetId: selectedTargetId }
+              } else if (wp.focusTargetId === selectedTargetId) {
+                // Unassigned this target
+                return { ...wp, focusTargetId: null }
+              }
+              return wp
+            })
+
+            setWaypoints(recalculateHeadings(updatedWaypoints, targets))
+            setSelectedTargetId(null)
+          }}
+          onCancel={() => setSelectedTargetId(null)}
+        />
+      )}
+
       {/* 📍 Floating Panels */}
       <QuickAccessToolbar onModeChange={setMapMode} currentMode={mapMode} />
     </div>
   )
-  
+
 }
 
 

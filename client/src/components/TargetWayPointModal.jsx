@@ -1,9 +1,22 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { XIcon } from 'lucide-react'
 
-export default function TargetWaypointModal({ waypoints, onConfirm, onCancel }) {
+export default function TargetWaypointModal({ waypoints, onConfirm, onCancel, defaultSelectedWaypointIds, readOnly = false, targetId, targetIndex }) {
   const [selectedWaypointIds, setSelectedWaypointIds] = useState([])
 
+  /*so this runs on the initial mount of targetwaypointmodal  or when targetid changes. 
+    -so on the very first initial mount, defaultselectedwaypoitids is empty
+    -targetid get changed every time we open the modal for a new target
+  */
+  useEffect(() => {
+    if (defaultSelectedWaypointIds) {
+    setSelectedWaypointIds(defaultSelectedWaypointIds)
+    console.log('defaault selected waypoint ids', defaultSelectedWaypointIds)
+    console.log('testing the conditional return blocks for selectedtargetid or for showtargetmodal/targetpending focus', targetId)
+}}, [targetId])
+  
+
+ /* This function is called when a waypoint in the modal is clicked. It toggles that waypoint’s selection state. */
   const handleToggle = (id) => {
     setSelectedWaypointIds((prev) =>
       prev.includes(id)
@@ -21,7 +34,7 @@ export default function TargetWaypointModal({ waypoints, onConfirm, onCancel }) 
       <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-md">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="font-semibold text-lg">Assign Waypoints to Target</h2>
+          <h2 className="font-semibold text-lg">Assign Waypoints to Target #{targetIndex + 1}</h2>
           <button
             onClick={onCancel}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -39,24 +52,22 @@ export default function TargetWaypointModal({ waypoints, onConfirm, onCancel }) 
             <p className="text-gray-500 italic">No waypoints available.</p>
           ) : (
             <div className="space-y-2">
-              {waypoints.map((wp) => {
+              {waypoints.map((wp, i) => {
                 const isSelected = selectedWaypointIds.includes(wp.id)
                 return (
                   <div
                     key={wp.id}
                     onClick={() => handleToggle(wp.id)}
-                    className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
-                      isSelected
+                    className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${isSelected
                         ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     <div
-                      className={`w-6 h-6 rounded-full border flex items-center justify-center mr-3 ${
-                        isSelected
+                      className={`w-6 h-6 rounded-full border flex items-center justify-center mr-3 ${isSelected
                           ? 'bg-blue-500 border-blue-500 text-white'
                           : 'border-gray-400'
-                      }`}
+                        }`}
                     >
                       {isSelected && (
                         <svg
@@ -98,11 +109,10 @@ export default function TargetWaypointModal({ waypoints, onConfirm, onCancel }) 
           <button
             onClick={handleConfirm}
             disabled={selectedWaypointIds.length === 0}
-            className={`px-4 py-2 rounded-md transition-colors ${
-              selectedWaypointIds.length > 0
+            className={`px-4 py-2 rounded-md transition-colors ${selectedWaypointIds.length > 0
                 ? 'bg-blue-500 hover:bg-blue-600 text-white'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
+              }`}
           >
             Confirm
           </button>
