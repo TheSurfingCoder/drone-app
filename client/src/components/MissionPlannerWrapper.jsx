@@ -15,6 +15,7 @@ import { calculateHeading } from '../utils/headingUtils' // we'll create this ne
 import TargetWaypointModal from './TargetWayPointModal';
 import { recalculateHeadings } from '../utils/recalculateHeadings';
 import CountdownModal from './CountdownModal';
+import AltitudeSlider from './AltitudeSlider';
 
 export default function MissionPlannerWrapper() {
   const [viewMode, setViewMode] = useState('2d');
@@ -141,6 +142,7 @@ export default function MissionPlannerWrapper() {
             mapMode={mapMode}
             dronePosition={dronePosition}
             setDronePosition={setDronePosition}
+            targets={targets}
           />
         )}
       </div>
@@ -222,7 +224,11 @@ export default function MissionPlannerWrapper() {
 
       {/* 📍 Floating Panels */}
       <QuickAccessToolbar onModeChange={setMapMode} currentMode={mapMode} />
+      <div className="sm:absolute sm:top-[4.5rem] sm:right-4 sm:z-30 sm:w-80 hidden sm:block">
+        <WaypointList waypoints={waypoints} setWaypoints={setWaypoints} unitSystem={unitSystem} />
+      </div>
     </div>
+
   )
 
 }

@@ -39,11 +39,12 @@ import {
 import WaypointBillboardOverlay from "./WaypointBillboardOverlay";
 import Layers from "./Layers";
 import SunControlPanel from "./SunControlPanel";
+import { recalculateHeadings } from '../utils/recalculateHeadings'
 
 
 Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_TOKEN;
 
-export default function CesiumMap({ waypoints, setWaypoints, ref }) {
+export default function CesiumMap({ waypoints, setWaypoints, ref, targets }) {
   const viewerRef = useRef(null);
   const [viewer, setViewer] = useState(null);
   const [showOSM, setShowOSM] = useState(false);
@@ -104,21 +105,31 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
       const lng = CesiumMath.toDegrees(carto.longitude);
       const groundHeight = carto.height ?? 0;
 
-      const height = 50; // Default height (can be edited via AltitudeSlider)
+      const height = 50;
       const groundPosition = pickedCartesian;
       const elevatedPosition = Cartesian3.fromDegrees(lng, lat, groundHeight + height);
 
-      setWaypoints((prev) => [
-        ...prev,
-        {
-          lat,
-          lng,
-          height,
-          groundHeight,
-          groundPosition,
-          elevatedPosition,
-        },
-      ]);
+      setWaypoints((prev) => {
+        const updated = [
+          ...prev,
+          {
+            id: Date.now(),
+            lat,
+            lng,
+            height,
+            groundHeight,
+            groundPosition,
+            elevatedPosition,
+            heading: null,
+            pitch: 0,
+            roll: 0,
+            focusTargetId: null,
+          },
+        ];
+        return recalculateHeadings(updated, targets);
+      });
+      
+
 
     }, ScreenSpaceEventType.LEFT_CLICK);
 
@@ -255,7 +266,7 @@ export default function CesiumMap({ waypoints, setWaypoints, ref }) {
       </div>
       <Viewer
         ref={viewerRef}
-        className="border-red-500 border-2 h-full w-full z-0"
+        className="h-full w-full z-0"
         baseLayerPicker={false}
         timeline={false}
         sceneModePicker={false}

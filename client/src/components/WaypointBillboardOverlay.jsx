@@ -3,12 +3,13 @@ import {
   Cartesian3,
   HeightReference,
   Color,
-  Cartesian2, SceneMode
+  Cartesian2, SceneMode, Transforms, HeadingPitchRoll, Ellipsoid, Math as CesiumMath
 } from 'cesium';
 import React from 'react';
 
 export default function WaypointBillboardOverlay({ waypoints, sceneMode }) {
   const icon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ccircle cx='10' cy='10' r='8' fill='red' stroke='white' stroke-width='2' /%3E%3C/svg%3E";
+
 
   return (
     <>
@@ -31,6 +32,28 @@ export default function WaypointBillboardOverlay({ waypoints, sceneMode }) {
                 showBackground: true,
               }}
             />
+            {sceneMode === SceneMode.SCENE3D && wp.elevatedPosition && (
+            <Entity
+            position={wp.elevatedPosition}
+            orientation={Transforms.headingPitchRollQuaternion(
+              wp.elevatedPosition,
+              new HeadingPitchRoll(
+                CesiumMath.toRadians((wp.heading ?? 0)-90),
+                CesiumMath.toRadians(wp.pitch ?? 0),
+                CesiumMath.toRadians(wp.roll ?? 0)
+              )
+            )}
+            model={{
+              uri: '/models/Cesium_Air.glb', 
+              scale: 0.05,
+              minimumPixelSize: 32,
+              maximumScale: 200,
+              silhouetteColor: Color.YELLOW,
+              silhouetteSize: 1
+            }}
+          />
+          
+          )}
 
             {/* Base disc (only in 3D) */}
             {sceneMode === SceneMode.SCENE3D && (
