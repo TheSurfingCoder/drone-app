@@ -139,10 +139,11 @@ export default function MissionPlannerWrapper() {
             unitSystem={unitSystem}
             setUnitSystem={setUnitSystem}
             ref={viewerRef}
-            mapMode={mapMode}
+            overlayType={mapMode}
             dronePosition={dronePosition}
             setDronePosition={setDronePosition}
             targets={targets}
+            setTargets={setTargets}
           />
         )}
       </div>

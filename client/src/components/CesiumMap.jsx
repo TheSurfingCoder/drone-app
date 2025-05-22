@@ -40,11 +40,12 @@ import WaypointBillboardOverlay from "./WaypointBillboardOverlay";
 import Layers from "./Layers";
 import SunControlPanel from "./SunControlPanel";
 import { recalculateHeadings } from '../utils/recalculateHeadings'
+import TargetEntity from "./TargetEntity";
 
 
 Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_TOKEN;
 
-export default function CesiumMap({ waypoints, setWaypoints, ref, targets }) {
+export default function CesiumMap({ waypoints, setWaypoints, ref, targets, setTargets, overlayType }) {
   const viewerRef = useRef(null);
   const [viewer, setViewer] = useState(null);
   const [showOSM, setShowOSM] = useState(false);
@@ -90,27 +91,49 @@ export default function CesiumMap({ waypoints, setWaypoints, ref, targets }) {
   // Click handler to add waypoints
   useEffect(() => {
     if (!viewer) return;
-
+  
     const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
-
+  
     handler.setInputAction((movement) => {
       const pickedCartesian = viewer.scene.pickPosition(movement.position);
       if (!pickedCartesian) {
         console.warn("❌ Could not determine clicked position.");
         return;
       }
-
+  
       const carto = Cartographic.fromCartesian(pickedCartesian);
       const lat = CesiumMath.toDegrees(carto.latitude);
       const lng = CesiumMath.toDegrees(carto.longitude);
       const groundHeight = carto.height ?? 0;
-
+  
       const height = 50;
       const groundPosition = pickedCartesian;
       const elevatedPosition = Cartesian3.fromDegrees(lng, lat, groundHeight + height);
-
-      setWaypoints((prev) => {
-        const updated = [
+  
+      if (overlayType === 'waypoint') {
+        setWaypoints((prev) => {
+          const updated = [
+            ...prev,
+            {
+              id: Date.now(),
+              lat,
+              lng,
+              height,
+              groundHeight,
+              groundPosition,
+              elevatedPosition,
+              heading: null,
+              pitch: 0,
+              roll: 0,
+              focusTargetId: null,
+            },
+          ];
+          return recalculateHeadings(updated, targets); // targets must be in scope
+        });
+      }
+  
+      if (overlayType === 'target') {
+        setTargets((prev) => [
           ...prev,
           {
             id: Date.now(),
@@ -120,23 +143,16 @@ export default function CesiumMap({ waypoints, setWaypoints, ref, targets }) {
             groundHeight,
             groundPosition,
             elevatedPosition,
-            heading: null,
-            pitch: 0,
-            roll: 0,
-            focusTargetId: null,
           },
-        ];
-        return recalculateHeadings(updated, targets);
-      });
-      
-
-
+        ]);
+      }
     }, ScreenSpaceEventType.LEFT_CLICK);
-
+  
     return () => {
       handler.destroy();
     };
-  }, [viewer, setWaypoints]);
+  }, [viewer, mapMode, setWaypoints, setTargets, targets]);
+  
 
 
 
@@ -300,6 +316,9 @@ export default function CesiumMap({ waypoints, setWaypoints, ref, targets }) {
         <WaypointBillboardOverlay waypoints={waypoints}
           sceneMode={viewer?.scene.mode}
         />
+       <TargetEntity targets={targets} sceneMode={viewer?.scene.mode} />
+
+
 
       </Viewer>
     </div>
