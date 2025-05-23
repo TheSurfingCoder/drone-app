@@ -19,7 +19,8 @@ export default function WaypointManager({
   mapMode,
   setTargetPendingFocus,
   setShowTargetModal,
-  onTargetClick
+  onTargetClick,
+  segmentSpeeds
 }) {
   useMapEvents({
     click: async (e) => {
@@ -131,6 +132,16 @@ export default function WaypointManager({
                 }),
               },
             ]}
+            segmentSpeeds={segmentSpeeds}
+            onSegmentClick={(i) => {
+              const input = prompt(`Enter speed for segment ${i + 1} (m/s)`, segmentSpeeds[i])
+              const newSpeed = parseFloat(input)
+              if (!isNaN(newSpeed) && newSpeed > 0) {
+                setSegmentSpeeds((prev) =>
+                  prev.map((s, idx) => (idx === i ? newSpeed : s))
+                )
+              }
+            }}
           />
         </>
       )}

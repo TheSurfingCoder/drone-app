@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import MapComponent from './Map';
 import CesiumMap from './CesiumMap';
 import UnitToggle from './UnitToggle';
@@ -32,10 +32,24 @@ export default function MissionPlannerWrapper() {
   const [selectedTargetId, setSelectedTargetId] = useState(null)
   const [showCountdown, setShowCountdown] = useState(false)
   const [countdownMessage, setCountdownMessage] = useState("Starting in")
+  const [segmentSpeeds, setSegmentSpeeds] = useState([])
+
+
+  useEffect(() => {
+    if (waypoints.length >= 2) {
+      setSegmentSpeeds((prev) => {
+        const needed = waypoints.length - 1
+        if (prev.length === needed) return prev
+        return Array(needed).fill(10)
+      })
+    }
+  }, [waypoints])
+  
 
 
   const selectedTarget = targets.find((t) => t.id === selectedTargetId)
   const targetIndex = targets.findIndex((t) => t.id === selectedTargetId)
+
 
 
 
@@ -46,10 +60,6 @@ export default function MissionPlannerWrapper() {
       const map = mapRef.current;
       map.setView([lat, lng], 15);
       map.invalidateSize()
-
-
-
-
     }
 
     if (viewMode === '3d') {
@@ -128,8 +138,14 @@ export default function MissionPlannerWrapper() {
             setDronePosition={setDronePosition}
             mapMode={mapMode}
             ref={mapRef}
+            segmentSpeeds={segmentSpeeds}
             onTargetClick={(targetId) => {
               setSelectedTargetId(targetId)
+            }}
+            onSegmentSpeedChange={(i, newSpeed) => {
+              setSegmentSpeeds((prev) =>
+                prev.map((s, idx) => (idx === i ? newSpeed : s))
+              )
             }}
           />
         ) : (
