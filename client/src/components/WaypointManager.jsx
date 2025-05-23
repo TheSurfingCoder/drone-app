@@ -142,16 +142,23 @@ export default function WaypointManager({
           id={target.id}
           onDragEnd={(id, newLat, newLng) => {
             setTargets((prev) => {
-              const updated = [...prev]
-              updated[id] = { ...updated[id], lat: newLat, lng: newLng }
-              return updated
+              return prev.map((target) =>
+                target.id === id
+                  ? { ...target, lat: newLat, lng: newLng }
+                  : target
+              )
             })
+            
 
             setWaypoints((prevWaypoints) =>
-              recalculateHeadings(prevWaypoints, targets.map((t, i) =>
-                i === id ? { ...t, lat: newLat, lng: newLng } : t
-              ))
+              recalculateHeadings(
+                prevWaypoints,
+                targets.map((t) =>
+                  t.id === id ? { ...t, lat: newLat, lng: newLng } : t
+                )
+              )
             )
+            
 
           }}
           onClick={(targetId) => {

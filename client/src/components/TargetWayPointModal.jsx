@@ -86,7 +86,7 @@ export default function TargetWaypointModal({ waypoints, onConfirm, onCancel, de
                       )}
                     </div>
                     <div>
-                      <div className="font-medium">Waypoint #{wp.id}</div>
+                      <div className="font-medium">Waypoint #{i}</div>
                       <div className="text-xs text-gray-500">
                         {wp.lat.toFixed(4)}, {wp.lng.toFixed(4)}
                       </div>
