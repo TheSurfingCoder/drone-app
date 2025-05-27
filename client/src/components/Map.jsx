@@ -11,7 +11,7 @@ Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_TOKEN;
 
 
 
-const MapComponent = forwardRef(({ waypoints, setWaypoints, unitSystem, dronePosition, targets, setTargets, mapMode, setTargetPendingFocus, setShowTargetModal, onTargetClick, segmentSpeeds }, ref) => {
+const MapComponent = forwardRef(({ waypoints, setWaypoints, unitSystem, dronePosition, targets, setTargets, mapMode, setTargetPendingFocus, setShowTargetModal, onTargetClick, segmentSpeeds, expandedSegmentId, setExpandedSegmentId, setIsMobileCollapsed }, ref) => {
   const startPosition = [20, 0];
   const [terrainProvider, setTerrainProvider] = useState(null);
 
@@ -67,7 +67,10 @@ const MapComponent = forwardRef(({ waypoints, setWaypoints, unitSystem, dronePos
           setShowTargetModal={setShowTargetModal}       // ✅ pass down
           onTargetClick={onTargetClick}
           segmentSpeeds={segmentSpeeds}
-        />{dronePosition && (<Marker position={dronePosition} icon={droneIcon}>
+          setIsMobileCollapsed={setIsMobileCollapsed}
+          setExpandedSegmentId={setExpandedSegmentId}
+        />
+        {dronePosition && (<Marker position={dronePosition} icon={droneIcon}>
           <Popup>Drone</Popup>
         </Marker>)}
 

@@ -1,9 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, Fragment, useEffect } from 'react'
 import {
   ChevronUpIcon,
   ChevronDownIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
+  RefreshCwIcon,
 } from 'lucide-react'
 
 const MobileWaypointPanel = ({
@@ -16,15 +15,48 @@ const MobileWaypointPanel = ({
   setShowTargetModal,
   setIsMobileCollapsed,
   onModeChange,
-  isMobileCollapsed
+  isMobileCollapsed,
+  segmentSpeeds,
+  expandedSegmentId,
+  setExpandedSegmentId,
+  handleSegmentSpeedChange,
+  handleApplySpeedToAll,
 }) => {
+
+  useEffect(() => {
+    console.log("🚀 segmentSpeeds updated:", segmentSpeeds)
+  }, [segmentSpeeds])
+
+
   const [expandedPanel, setExpandedPanel] = useState(null)
-  const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false)
 
   if (!waypoints.length) return null
 
   const getTotalElevation = (wp) => {
     return (wp.groundHeight ?? 0) + (wp.height ?? 0)
+  }
+
+  const getSegmentSpeed = (fromId, toId) => {
+    const fromIndex = waypoints.findIndex(wp => wp.id === fromId)
+    const toIndex = waypoints.findIndex(wp => wp.id === toId)
+    const index = Math.min(fromIndex, toIndex)
+    console.log("🔎 getSegmentSpeed from:", fromId, "to:", toId)
+    console.log("📍 Indices:", fromIndex, toIndex, "=> Index used:", index)
+    console.log("📊 segmentSpeeds:", segmentSpeeds)
+
+    return segmentSpeeds?.[index] ?? 10
+  }
+
+  const handleSegmentClick = (fromId, toId) => {
+    const id = `${fromId}-${toId}`
+    setExpandedSegmentId(id === expandedSegmentId ? null : id)
+    setExpandedPanel(null)
+  }
+
+  const handleWaypointClick = (id) => {
+    setExpandedPanel(id)
+    setExpandedSegmentId(null)
+    onSelectWaypoint(id)
   }
 
   return (
@@ -49,22 +81,45 @@ const MobileWaypointPanel = ({
             )}
           </div>
         </div>
+
         <div className={`transition-all duration-300 ease-out overflow-hidden ${isMobileCollapsed ? 'max-h-0' : 'max-h-[60vh]'}`}>
           <div className="flex overflow-x-auto border-b border-gray-100 px-3 py-1 space-x-1">
-            {waypoints.map((wp) => (
-              <button
-                key={wp.id}
-                className={`px-3 py-1.5 rounded-lg whitespace-nowrap text-xs font-medium transition-all duration-200 ${expandedPanel === wp.id || selectedWaypoint === wp.id ? 'bg-blue-500 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                onClick={() => {
-                  setExpandedPanel(wp.id)
-                  onSelectWaypoint(wp.id)
-                }}
-              >
-                #{wp.id}
-              </button>
+            {waypoints.map((wp, index) => (
+              <Fragment key={wp.id}>
+                <button
+                  className={`px-3 py-1.5 rounded-lg whitespace-nowrap text-xs font-medium transition-all duration-200 ${expandedPanel === wp.id ? 'bg-blue-500 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  onClick={() => handleWaypointClick(wp.id)}
+                >
+                  #{wp.id}
+                </button>
+                {index < waypoints.length - 1 && (
+                  <div className="flex items-center px-2">
+                    <button
+                      onClick={() => handleSegmentClick(wp.id, waypoints[index + 1].id)}
+                      className={`flex items-center gap-1 px-2 py-1 rounded-full border transition-all duration-200 ${expandedSegmentId === `${wp.id}-${waypoints[index + 1].id}`
+                          ? 'bg-amber-100 border-amber-300 shadow-md scale-105'
+                          : 'bg-blue-50 hover:bg-blue-100 border-blue-200'
+                        }`}
+                    >
+                      <div className={`w-2 h-2 rounded-full ${expandedSegmentId === `${wp.id}-${waypoints[index + 1].id}`
+                          ? 'bg-amber-500 animate-bounce'
+                          : 'bg-blue-500 animate-pulse'
+                        }`} />
+                      <span className={`text-xs font-medium ${expandedSegmentId === `${wp.id}-${waypoints[index + 1].id}`
+                          ? 'text-amber-700'
+                          : 'text-blue-700'
+                        }`}>
+                        {getSegmentSpeed(wp.id, waypoints[index + 1].id).toFixed(1)}
+                      </span>
+                    </button>
+                  </div>
+                )}
+              </Fragment>
             ))}
           </div>
+
           <div className="overflow-y-auto max-h-[45vh] p-3">
+            {/* Waypoint Details */}
             {expandedPanel &&
               waypoints.filter((wp) => wp.id === expandedPanel).map((wp) => (
                 <div key={wp.id} className="space-y-3">
@@ -113,9 +168,7 @@ const MobileWaypointPanel = ({
                   <div className="bg-green-50 p-2 rounded-md border border-green-100">
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-medium text-green-700">Total Elevation</span>
-                      <span className="font-bold text-green-800 text-sm">
-                        {getTotalElevation(wp).toFixed(1)} m
-                      </span>
+                      <span className="font-bold text-green-800 text-sm">{getTotalElevation(wp).toFixed(1)} m</span>
                     </div>
                   </div>
                   <div className="bg-gray-50 p-2 rounded-md border border-gray-200">
@@ -157,6 +210,48 @@ const MobileWaypointPanel = ({
                   </div>
                 </div>
               ))}
+
+            {/* Segment Speed Editor */}
+            {expandedSegmentId && (() => {
+              const [fromId, toId] = expandedSegmentId.split('-').map(Number)
+              const speed = getSegmentSpeed(fromId, toId)
+              console.log("🔥 Rendering speed slider with value:", speed)
+              return (
+                <div className="mt-3 p-3 bg-white rounded-lg border border-gray-200 shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse" />
+                      <span className="text-lg font-bold text-gray-800">{speed.toFixed(1)} m/s</span>
+                    </div>
+                    <button
+                      onClick={() => handleApplySpeedToAll(speed)}
+                      className="flex items-center text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 px-2 py-1 rounded-md border border-blue-200 transition-colors"
+                    >
+                      <RefreshCwIcon size={12} className="mr-1" />
+                      All
+                    </button>
+                  </div>
+                  <div className="space-y-1">
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="20"
+                      step="0.1"
+                      value={speed}
+                      onChange={(e) => handleSegmentSpeedChange(fromId, toId, Number(e.target.value))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                      style={{
+                        background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(speed / 20) * 100}%, #e5e7eb ${(speed / 20) * 100}%, #e5e7eb 100%)`,
+                      }}
+                    />
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>0.1</span>
+                      <span>20 m/s</span>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         </div>
       </div>

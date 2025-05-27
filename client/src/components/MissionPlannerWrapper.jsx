@@ -39,6 +39,7 @@ export default function MissionPlannerWrapper() {
   const isMobile = useIsMobile();
   const [selectedWaypoint, setSelectedWaypoint] = useState(null);
   const [isMobileCollapsed, setIsMobileCollapsed] = useState(true)
+  const [expandedSegmentId, setExpandedSegmentId] = useState(null)
 
 
   useEffect(() => {
@@ -46,10 +47,14 @@ export default function MissionPlannerWrapper() {
       setSegmentSpeeds((prev) => {
         const needed = waypoints.length - 1
         if (prev.length === needed) return prev
-        return Array(needed).fill(10)
+        if (prev.length < needed) {
+          return [...prev, ...Array(needed - prev.length).fill(10)]
+        }
+        return prev.slice(0, needed) // in case waypoints are deleted
       })
     }
   }, [waypoints])
+  
 
 
 
@@ -72,6 +77,30 @@ export default function MissionPlannerWrapper() {
 
     return isMobile;
   }
+
+
+  const handleSegmentSpeedChange = (fromId, toId, newSpeed) => {
+    const fromIndex = waypoints.findIndex(wp => wp.id === fromId)
+    const toIndex = waypoints.findIndex(wp => wp.id === toId)
+    const index = Math.min(fromIndex, toIndex)
+  
+    if (index < 0 || index >= segmentSpeeds.length) {
+      console.warn("Invalid segment index:", index)
+      return
+    }
+  
+    const newSpeeds = [...segmentSpeeds]
+    newSpeeds[index] = newSpeed
+    setSegmentSpeeds(newSpeeds)
+  }
+  
+
+  const handleApplySpeedToAll = (newSpeed) => {
+    const newSpeeds = Array(waypoints.length - 1).fill(newSpeed)
+    setSegmentSpeeds(newSpeeds)
+    console.log("🚀 Applied speed to all segments:", newSpeeds)
+  }
+  
 
 
   const handleSelectWaypoint = (id) => {
@@ -158,7 +187,7 @@ export default function MissionPlannerWrapper() {
             Switch to {viewMode === '2d' ? '3D' : '2D'}
           </button>
         </div>
-        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-[900]">
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-[49]">
           <ModernStatusPill waypoints={waypoints} unitSystem={unitSystem} />
         </div>
       </div>
@@ -182,12 +211,11 @@ export default function MissionPlannerWrapper() {
             segmentSpeeds={segmentSpeeds}
             onTargetClick={(targetId) => {
               setSelectedTargetId(targetId)
+
             }}
-            onSegmentSpeedChange={(i, newSpeed) => {
-              setSegmentSpeeds((prev) =>
-                prev.map((s, idx) => (idx === i ? newSpeed : s))
-              )
-            }}
+            expandedSegmentId={expandedSegmentId}
+            setExpandedSegmentId={setExpandedSegmentId}
+            setIsMobileCollapsed={setIsMobileCollapsed}
           />
         ) : (
           <CesiumMap
@@ -282,10 +310,10 @@ export default function MissionPlannerWrapper() {
 
       {/* 📍 Floating Panels */}
       <QuickAccessToolbar
-  isMobile={isMobile}
-  onModeChange={setMapMode}
-  currentMode={mapMode}
-/>
+        isMobile={isMobile}
+        onModeChange={setMapMode}
+        currentMode={mapMode}
+      />
       {isMobile && (
         <MobileWaypointPanel
           waypoints={waypoints}
@@ -298,6 +326,11 @@ export default function MissionPlannerWrapper() {
           setIsMobileCollapsed={setIsMobileCollapsed} // new
           onModeChange={setMapMode}
           isMobileCollapsed={isMobileCollapsed}
+          expandedSegmentId={expandedSegmentId}
+          setExpandedSegmentId={setExpandedSegmentId}
+          handleSegmentSpeedChange={handleSegmentSpeedChange}
+          segmentSpeeds={segmentSpeeds}
+          handleApplySpeedToAll={handleApplySpeedToAll}
         />
       )}
 
