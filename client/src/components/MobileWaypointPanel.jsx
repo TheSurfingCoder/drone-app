@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import {
   ChevronUpIcon,
   ChevronDownIcon,
-  XIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
 } from 'lucide-react'
@@ -13,9 +12,13 @@ const MobileWaypointPanel = ({
   onSelectWaypoint,
   onUpdateWaypoint,
   onDeleteWaypoint,
+  setSelectedTargetId,
+  setShowTargetModal,
+  setIsMobileCollapsed,
+  onModeChange,
+  isMobileCollapsed
 }) => {
   const [expandedPanel, setExpandedPanel] = useState(null)
-  const [isMobileCollapsed, setIsMobileCollapsed] = useState(true)
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false)
 
   if (!waypoints.length) return null
@@ -26,7 +29,6 @@ const MobileWaypointPanel = ({
 
   return (
     <>
-      {/* Mobile Bottom Sheet (< md) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white rounded-t-xl shadow-2xl transition-all duration-300 ease-out">
         <div
           className="w-full flex flex-col items-center py-2 cursor-pointer border-b border-gray-100"
@@ -113,6 +115,43 @@ const MobileWaypointPanel = ({
                       <span className="text-xs font-medium text-green-700">Total Elevation</span>
                       <span className="font-bold text-green-800 text-sm">
                         {getTotalElevation(wp).toFixed(1)} m
+                      </span>
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 p-2 rounded-md border border-gray-200">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-medium text-gray-600">Focus Target</span>
+                      <span className="text-xs text-gray-800">
+                        {wp.focusTargetId != null ? `#${wp.focusTargetId}` : 'None'}
+                      </span>
+                    </div>
+                    {wp.focusTargetId != null ? (
+                      <button
+                        onClick={() => {
+                          setSelectedTargetId(wp.focusTargetId)
+                          setShowTargetModal(true)
+                        }}
+                        className="text-xs text-blue-600 underline hover:text-blue-800"
+                      >
+                        Change Focus Target
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setIsMobileCollapsed(true)
+                          onModeChange('target')
+                        }}
+                        className="text-xs text-blue-600 underline hover:text-blue-800"
+                      >
+                        Add Focus Target
+                      </button>
+                    )}
+                  </div>
+                  <div className="bg-gray-50 p-2 rounded-md border border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-medium text-gray-600">Heading</span>
+                      <span className="text-xs font-mono text-gray-800">
+                        {typeof wp.heading === 'number' ? `${wp.heading.toFixed(1)}°` : '—'}
                       </span>
                     </div>
                   </div>

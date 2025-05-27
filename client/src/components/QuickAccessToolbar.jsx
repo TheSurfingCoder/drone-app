@@ -8,8 +8,8 @@ import {
 } from 'lucide-react'
 import SidePanel from './SidePanel'
 
-export default function QuickAccessToolbar ({ isMobile, isCompactMode, onModeChange, currentMode }) {
-  const [isTargetMode, setIsTargetMode] = useState(currentMode === 'target')
+export default function QuickAccessToolbar({ isMobile, isCompactMode, onModeChange, currentMode }) {
+  const isTargetMode = currentMode === 'target'
 
   const handleFileImport = () => {
     console.log('Import file clicked')
@@ -20,7 +20,6 @@ export default function QuickAccessToolbar ({ isMobile, isCompactMode, onModeCha
   }
 
   const toggleMode = (mode) => {
-    setIsTargetMode(mode === 'target')
     onModeChange(mode)
   }
 

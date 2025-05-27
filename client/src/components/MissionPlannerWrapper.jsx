@@ -38,7 +38,7 @@ export default function MissionPlannerWrapper() {
   const [segmentSpeeds, setSegmentSpeeds] = useState([])
   const isMobile = useIsMobile();
   const [selectedWaypoint, setSelectedWaypoint] = useState(null);
-
+  const [isMobileCollapsed, setIsMobileCollapsed] = useState(true)
 
 
   useEffect(() => {
@@ -55,24 +55,24 @@ export default function MissionPlannerWrapper() {
 
   const selectedTarget = targets.find((t) => t.id === selectedTargetId)
   const targetIndex = targets.findIndex((t) => t.id === selectedTargetId)
-  
+
   function useIsMobile() {
     const [isMobile, setIsMobile] = useState(
       window.innerWidth <= 768 || window.innerHeight <= 500
     );
-  
+
     useEffect(() => {
       const handleResize = () => {
         setIsMobile(window.innerWidth <= 768 || window.innerHeight <= 500);
       };
-  
+
       window.addEventListener('resize', handleResize);
       return () => window.removeEventListener('resize', handleResize);
     }, []);
-  
+
     return isMobile;
   }
-  
+
 
   const handleSelectWaypoint = (id) => {
     setSelectedWaypoint(id);
@@ -281,7 +281,11 @@ export default function MissionPlannerWrapper() {
       )}
 
       {/* 📍 Floating Panels */}
-      <QuickAccessToolbar onModeChange={setMapMode} currentMode={mapMode} />
+      <QuickAccessToolbar
+  isMobile={isMobile}
+  onModeChange={setMapMode}
+  currentMode={mapMode}
+/>
       {isMobile && (
         <MobileWaypointPanel
           waypoints={waypoints}
@@ -289,6 +293,11 @@ export default function MissionPlannerWrapper() {
           onSelectWaypoint={handleSelectWaypoint}
           onUpdateWaypoint={handleUpdateWaypoint}
           onDeleteWaypoint={handleDeleteWaypoint}
+          setSelectedTargetId={setSelectedTargetId}
+          setShowTargetModal={setShowTargetModal}
+          setIsMobileCollapsed={setIsMobileCollapsed} // new
+          onModeChange={setMapMode}
+          isMobileCollapsed={isMobileCollapsed}
         />
       )}
 
