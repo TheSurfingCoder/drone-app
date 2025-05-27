@@ -16,6 +16,9 @@ import TargetWaypointModal from './TargetWayPointModal';
 import { recalculateHeadings } from '../utils/recalculateHeadings';
 import CountdownModal from './CountdownModal';
 import AltitudeSlider from './AltitudeSlider';
+import MobileWaypointPanel from './MobileWaypointPanel'
+
+
 
 export default function MissionPlannerWrapper() {
   const [viewMode, setViewMode] = useState('2d');
@@ -33,6 +36,9 @@ export default function MissionPlannerWrapper() {
   const [showCountdown, setShowCountdown] = useState(false)
   const [countdownMessage, setCountdownMessage] = useState("Starting in")
   const [segmentSpeeds, setSegmentSpeeds] = useState([])
+  const isMobile = useIsMobile();
+  const [selectedWaypoint, setSelectedWaypoint] = useState(null);
+
 
 
   useEffect(() => {
@@ -44,13 +50,48 @@ export default function MissionPlannerWrapper() {
       })
     }
   }, [waypoints])
-  
+
 
 
   const selectedTarget = targets.find((t) => t.id === selectedTargetId)
   const targetIndex = targets.findIndex((t) => t.id === selectedTargetId)
+  
+  function useIsMobile() {
+    const [isMobile, setIsMobile] = useState(
+      window.innerWidth <= 768 || window.innerHeight <= 500
+    );
+  
+    useEffect(() => {
+      const handleResize = () => {
+        setIsMobile(window.innerWidth <= 768 || window.innerHeight <= 500);
+      };
+  
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }, []);
+  
+    return isMobile;
+  }
+  
 
+  const handleSelectWaypoint = (id) => {
+    setSelectedWaypoint(id);
+    const wp = waypoints.find((w) => w.id === id);
+    if (wp && mapRef.current) {
+      mapRef.current.setView([wp.lat, wp.lng], 30); // zoom level optional
+    }
+  };
 
+  const handleUpdateWaypoint = (id, updates) => {
+    setWaypoints((prev) =>
+      prev.map((wp) => (wp.id === id ? { ...wp, ...updates } : wp))
+    );
+  };
+
+  const handleDeleteWaypoint = (id) => {
+    setWaypoints((prev) => prev.filter((wp) => wp.id !== id));
+    if (selectedWaypoint === id) setSelectedWaypoint(null);
+  };
 
 
   const handleLocateMe = (lat, lng) => {
@@ -241,9 +282,16 @@ export default function MissionPlannerWrapper() {
 
       {/* 📍 Floating Panels */}
       <QuickAccessToolbar onModeChange={setMapMode} currentMode={mapMode} />
-      <div className="sm:absolute sm:top-[4.5rem] sm:right-4 sm:z-30 sm:w-80 hidden sm:block">
-        <WaypointList waypoints={waypoints} setWaypoints={setWaypoints} unitSystem={unitSystem} />
-      </div>
+      {isMobile && (
+        <MobileWaypointPanel
+          waypoints={waypoints}
+          selectedWaypoint={selectedWaypoint}
+          onSelectWaypoint={handleSelectWaypoint}
+          onUpdateWaypoint={handleUpdateWaypoint}
+          onDeleteWaypoint={handleDeleteWaypoint}
+        />
+      )}
+
     </div>
 
   )
