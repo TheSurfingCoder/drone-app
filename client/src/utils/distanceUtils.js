@@ -18,8 +18,23 @@ export function calculateDistance(waypoints){
 
 }
 
-export function estimateDuration(distanceKm, speedMetersPerSecond = 5) {
-    const meters = distanceKm * 1000;
-    const seconds = meters / speedMetersPerSecond;
-    return seconds;
+export function estimateDuration(waypoints, segmentSpeeds) {
+  if (waypoints.length < 2 || segmentSpeeds.length < 1) return 0;
+
+  let totalSeconds = 0;
+  for (let i = 0; i < waypoints.length - 1; i++) {
+    const from = waypoints[i];
+    const to = waypoints[i + 1];
+    const speed = segmentSpeeds[i] ?? 5; // fallback to 5 m/s if undefined
+
+    const dx = to.lng - from.lng;
+    const dy = to.lat - from.lat;
+    const distanceDegrees = Math.sqrt(dx * dx + dy * dy);
+    const metersPerDegree = 111_139; // avg Earth conversion
+
+    const meters = distanceDegrees * metersPerDegree;
+    totalSeconds += meters / speed;
   }
+
+  return totalSeconds;
+}

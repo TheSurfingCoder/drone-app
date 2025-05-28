@@ -1,7 +1,7 @@
 import { calculateDistance, estimateDuration } from '../utils/distanceUtils'
 import React from 'react'
 
-export default function ModernStatusPill({ waypoints, unitSystem }) {
+export default function ModernStatusPill({ waypoints, unitSystem, segmentSpeeds }) {
   const distanceKm = calculateDistance(waypoints)
   const distance =
     unitSystem === 'imperial'
@@ -9,7 +9,7 @@ export default function ModernStatusPill({ waypoints, unitSystem }) {
       : distanceKm.toFixed(2)
 
   const distanceLabel = unitSystem === 'imperial' ? 'mi' : 'km'
-  const durationMin = (estimateDuration(distanceKm) / 60).toFixed(1)
+  const durationMin = (estimateDuration(waypoints, segmentSpeeds) / 60).toFixed(1)
 
   return (
     <div className="inline-flex items-center bg-white/90 backdrop-blur-sm border border-gray-200/50 rounded-full px-4 py-1.5 shadow-lg transition-all duration-300 hover:shadow-xl space-x-3 w-auto">

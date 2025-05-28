@@ -1,31 +1,21 @@
-//calculate the step-by-step path between waypoints
+export function moveToward({ droneLatLng, targetLatLng, speed, deltaTime }) {
+  const [lat1, lng1] = droneLatLng
+  const [lat2, lng2] = targetLatLng
 
-// src/utils/droneMovement.js
+  const dx = lat2 - lat1
+  const dy = lng2 - lng1
+  const distance = Math.sqrt(dx * dx + dy * dy)
 
-export function moveToward(current, target, stepSize = 0.0001) {
-  if (!Array.isArray(current) || !Array.isArray(target)) {
-    throw new Error("moveToward expects [lat, lng] arrays for both current and target")
-  } 
-  
-  const [curLat, curLng] = current;
-    const [targetLat, targetLng] = target;
-  
-    const dLat = targetLat - curLat;
-    const dLng = targetLng - curLng;
-  
-    const distance = Math.sqrt(dLat * dLat + dLng * dLng);
-  
-    // If we're close enough, snap to the target
-    if (distance < stepSize) {
-      return target;
-    }
-  
-    // Calculate next step toward the target
-    const ratio = stepSize / distance;
-  
-    const nextLat = curLat + dLat * ratio;
-    const nextLng = curLng + dLng * ratio;
-  
-    return [nextLat, nextLng];
-  }
-  
+  if (distance === 0) return droneLatLng
+
+  // Distance = speed × time
+  const step = (speed / 111139) * deltaTime // Convert meters/sec into degrees/sec
+
+  if (step >= distance) return targetLatLng
+
+  const ratio = step / distance
+  return [
+    lat1 + dx * ratio,
+    lng1 + dy * ratio,
+  ]
+}

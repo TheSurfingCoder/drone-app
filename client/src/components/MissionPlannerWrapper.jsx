@@ -177,6 +177,8 @@ export default function MissionPlannerWrapper() {
             showCountdown={showCountdown}
             setShowCountdown={setShowCountdown}
             setCountdownMessage={setCountdownMessage}
+            segmentSpeeds={segmentSpeeds}
+            unitSystem={unitSystem}
           />
         </div>
         <div>
@@ -188,7 +190,7 @@ export default function MissionPlannerWrapper() {
           </button>
         </div>
         <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-[49]">
-          <ModernStatusPill waypoints={waypoints} unitSystem={unitSystem} />
+          <ModernStatusPill waypoints={waypoints} unitSystem={unitSystem} segmentSpeeds={segmentSpeeds} />
         </div>
       </div>
 
