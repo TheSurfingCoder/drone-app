@@ -17,7 +17,7 @@ import { recalculateHeadings } from '../utils/recalculateHeadings';
 import CountdownModal from './CountdownModal';
 import AltitudeSlider from './AltitudeSlider';
 import MobileWaypointPanel from './MobileWaypointPanel'
-
+import DesktopWaypointPanel from './DesktopWaypointPanel'
 
 
 export default function MissionPlannerWrapper() {
@@ -40,7 +40,7 @@ export default function MissionPlannerWrapper() {
   const [selectedWaypoint, setSelectedWaypoint] = useState(null);
   const [isMobileCollapsed, setIsMobileCollapsed] = useState(true)
   const [expandedSegmentId, setExpandedSegmentId] = useState(null)
-
+  const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false)
 
   useEffect(() => {
     if (waypoints.length >= 2) {
@@ -54,7 +54,7 @@ export default function MissionPlannerWrapper() {
       })
     }
   }, [waypoints])
-  
+
 
 
 
@@ -78,36 +78,37 @@ export default function MissionPlannerWrapper() {
     return isMobile;
   }
 
+  const isDesktop = !isMobile;
 
   const handleSegmentSpeedChange = (fromId, toId, newSpeed) => {
     const fromIndex = waypoints.findIndex(wp => wp.id === fromId)
     const toIndex = waypoints.findIndex(wp => wp.id === toId)
     const index = Math.min(fromIndex, toIndex)
-  
+
     if (index < 0 || index >= segmentSpeeds.length) {
       console.warn("Invalid segment index:", index)
       return
     }
-  
+
     const newSpeeds = [...segmentSpeeds]
     newSpeeds[index] = newSpeed
     setSegmentSpeeds(newSpeeds)
   }
-  
+
 
   const handleApplySpeedToAll = (newSpeed) => {
     const newSpeeds = Array(waypoints.length - 1).fill(newSpeed)
     setSegmentSpeeds(newSpeeds)
     console.log("🚀 Applied speed to all segments:", newSpeeds)
   }
-  
+
 
 
   const handleSelectWaypoint = (id) => {
     setSelectedWaypoint(id);
     const wp = waypoints.find((w) => w.id === id);
     if (wp && mapRef.current) {
-      mapRef.current.setView([wp.lat, wp.lng], 30); // zoom level optional
+      mapRef.current.setView([wp.lat, wp.lng], 15); // zoom level optional
     }
   };
 
@@ -335,6 +336,27 @@ export default function MissionPlannerWrapper() {
           handleApplySpeedToAll={handleApplySpeedToAll}
         />
       )}
+      {isDesktop && (
+        <DesktopWaypointPanel
+          waypoints={waypoints}
+          selectedWaypoint={selectedWaypoint}
+          onSelectWaypoint={handleSelectWaypoint}
+          onUpdateWaypoint={handleUpdateWaypoint}
+          onDeleteWaypoint={handleDeleteWaypoint}
+          segmentSpeeds={segmentSpeeds}
+          expandedSegmentId={expandedSegmentId}
+          setExpandedSegmentId={setExpandedSegmentId}
+          handleSegmentSpeedChange={handleSegmentSpeedChange}
+          handleApplySpeedToAll={handleApplySpeedToAll}
+          setSelectedTargetId={setSelectedTargetId}
+          setShowTargetModal={setShowTargetModal}
+          onModeChange={setMapMode}
+          unitSystem={unitSystem}
+          isDesktopCollapsed={isDesktopCollapsed}
+          setIsDesktopCollapsed={setIsDesktopCollapsed}
+        />
+      )}
+
 
     </div>
 
