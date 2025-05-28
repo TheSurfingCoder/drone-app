@@ -142,6 +142,7 @@ export default function WaypointManager({
               setIsMobileCollapsed(false)
               setExpandedSegmentId(`${from.id}-${to.id}`)
             }}
+            unitSystem={unitSystem}
             
           />
         </>

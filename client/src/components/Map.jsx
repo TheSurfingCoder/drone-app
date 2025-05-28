@@ -43,7 +43,8 @@ const MapComponent = forwardRef(({ waypoints, setWaypoints, unitSystem, dronePos
       <MapContainer
         ref={ref}
         center={startPosition}
-        zoom={2}
+        zoom={3}
+        maxZoom={22}
         zoomControl={false}
         scrollWheelZoom={true}
         whenCreated={(map) =>
@@ -54,6 +55,7 @@ const MapComponent = forwardRef(({ waypoints, setWaypoints, unitSystem, dronePos
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; OpenStreetMap contributors'
+          maxZoom={22}
         />
         <WaypointManager
           waypoints={waypoints}

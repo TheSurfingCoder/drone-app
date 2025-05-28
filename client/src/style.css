@@ -21,6 +21,18 @@ body, html, #root {
   width: 100%;
 }
 
+.speed-label {
+  background: white;
+  padding: 4px 8px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+
 
 
 

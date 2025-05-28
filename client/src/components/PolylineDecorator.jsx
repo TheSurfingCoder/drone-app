@@ -3,12 +3,8 @@ import { useEffect } from 'react'
 import L from 'leaflet'
 import 'leaflet-polylinedecorator'
 
-export default function PolylineDecorator({ positions, segmentSpeeds, onSegmentClick }) {
+export default function PolylineDecorator({ positions, segmentSpeeds, onSegmentClick, unitSystem }) {
   const map = useMap()
-
-  
-  
-  
 
   useEffect(() => {
     if (!map || positions.length < 2) return
@@ -18,16 +14,24 @@ export default function PolylineDecorator({ positions, segmentSpeeds, onSegmentC
     for (let i = 0; i < positions.length - 1; i++) {
       const from = positions[i]
       const to = positions[i + 1]
-      const speed = segmentSpeeds[i] ?? 10 // fallback default
-
+      const speed = segmentSpeeds[i] ?? 10
+      const displaySpeed = unitSystem === 'metric'
+        ? `${speed.toFixed(1)} m/s`
+        : `${(speed * 2.23694).toFixed(1)} mph`
+      
       // Draw clickable segment
       const segment = L.polyline([from, to], {
         color: 'blue',
         weight: 4,
+        interactive: true,
+        bubblingMouseEvents: false,
       }).addTo(layerGroup)
 
-      // Allow speed editing via click
-      segment.on('click', () => {
+      // Improve click experience
+      segment.getElement?.()?.style?.setProperty('cursor', 'pointer')
+
+      segment.on('click', (e) => {
+        e.originalEvent.stopPropagation()
         if (onSegmentClick) onSegmentClick(i)
       })
 
@@ -37,21 +41,48 @@ export default function PolylineDecorator({ positions, segmentSpeeds, onSegmentC
         (from[1] + to[1]) / 2,
       ]
 
-      L.marker(midpoint, {
+      const marker = L.marker(midpoint, {
         icon: L.divIcon({
-          className: 'text-xs bg-white px-1 border border-gray-300 rounded',
-          html: `${speed} m/s`,
+          className: '',
+          html: `
+  <div style="
+    display: inline-block;
+    font-size: 12px;
+    background-color: white;
+    padding: 4px 6px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    color: #1e3a8a;
+    font-weight: 600;
+    font-family: sans-serif;
+    cursor: pointer;
+    pointer-events: auto;
+    user-select: none;
+    white-space: nowrap;
+  ">
+    ${displaySpeed}
+  </div>
+`
+
+          ,
         }),
-        interactive: false,
-      }).addTo(layerGroup)
+        interactive: true,
+        bubblingMouseEvents: false,
+      })
+
+      marker.on('click', (e) => {
+        e.originalEvent.stopPropagation()
+        if (onSegmentClick) onSegmentClick(i)
+      })
+
+      marker.addTo(layerGroup)
     }
 
     return () => {
       map.removeLayer(layerGroup)
     }
   }, [map, positions, segmentSpeeds, onSegmentClick])
-
- 
 
   return null
 }
