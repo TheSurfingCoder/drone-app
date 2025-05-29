@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useRef, useEffect } from 'react'
 import { ChevronLeftIcon, XIcon } from 'lucide-react'
 import SpeedConnector from './SpeedConnector'
 
@@ -18,7 +18,23 @@ export default function DesktopWaypointPanel({
   handleApplySpeedToAll,
   expandedSegmentId,
   setExpandedSegmentId,
+  onSelectSegment
 }) {
+
+
+  const segmentRefs = useRef({});
+
+  useEffect(() => {
+    if (expandedSegmentId && segmentRefs.current[expandedSegmentId]) {
+      segmentRefs.current[expandedSegmentId].scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  }, [expandedSegmentId]);
+  
+
+
   const getTotalElevation = (wp) => (wp.groundHeight ?? 0) + (wp.height ?? 0)
 
   const handleWaypointClick = (id) => {
@@ -80,10 +96,10 @@ export default function DesktopWaypointPanel({
                           : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
                       }`}
                     >
-                      {wp.id}
+                      {i+1}
                     </div>
                     <span className="font-medium text-gray-800">
-                      Waypoint #{wp.id}
+                      Waypoint #{i+1}
                     </span>
                   </div>
                   <button
@@ -180,19 +196,17 @@ export default function DesktopWaypointPanel({
                 <SpeedConnector
                 speed={segmentSpeeds?.[i] ?? 10}
                 isExpanded={expandedSegmentId === `${wp.id}-${waypoints[i + 1].id}`}
-                onToggle={() =>
-                  setExpandedSegmentId(
-                    expandedSegmentId === `${wp.id}-${waypoints[i + 1].id}`
-                      ? null
-                      : `${wp.id}-${waypoints[i + 1].id}`
-                  )
-                }
-                onChange={(newSpeed) =>   handleSegmentSpeedChange(wp.id, waypoints[i + 1].id, newSpeed)
-
-
+                highlight={expandedSegmentId === `${wp.id}-${waypoints[i + 1].id}`}
+                onToggle={() => onSelectSegment(wp.id, waypoints[i + 1].id)}
+                onChange={(newSpeed) =>
+                  handleSegmentSpeedChange(wp.id, waypoints[i + 1].id, newSpeed)
                 }
                 onApplyToAll={handleApplySpeedToAll}
+                ref={(el) =>
+                  (segmentRefs.current[`${wp.id}-${waypoints[i + 1].id}`] = el)
+                }
               />
+              
               
               )}
             </React.Fragment>

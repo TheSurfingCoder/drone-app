@@ -139,16 +139,27 @@ export default function MissionPlannerWrapper() {
   
     const from = waypoints.find((wp) => wp.id === fromId);
     const to = waypoints.find((wp) => wp.id === toId);
+    const map = mapRef.current;
   
-    if (from && to && mapRef.current) {
+    if (from && to && map) {
       const midLat = (from.lat + to.lat) / 2;
       const midLng = (from.lng + to.lng) / 2;
-      const map = mapRef.current;
-      const currentZoom = map.getZoom();
-      const zoom = currentZoom < 19 ? 19 : currentZoom;
-      map.setView([midLat, midLng], zoom);
+      const zoom = map.getZoom();
+      const adjustedZoom = zoom > 19 ? zoom : 19;
+  
+      const midpoint = L.latLng(midLat, midLng);
+      const point = map.project(midpoint, adjustedZoom);
+  
+      // Offset for desktop/mobile
+      const offsetX = isDesktop ? 150 : 0; // shift left on desktop
+      const offsetY = isMobile ? 100 : 0;  // shift up on mobile
+      const adjustedPoint = L.point(point.x + offsetX, point.y + offsetY);
+  
+      const newLatLng = map.unproject(adjustedPoint, adjustedZoom);
+      map.setView(newLatLng, adjustedZoom);
     }
   };
+  
   
   
 
@@ -400,6 +411,7 @@ export default function MissionPlannerWrapper() {
           unitSystem={unitSystem}
           isDesktopCollapsed={isDesktopCollapsed}
           setIsDesktopCollapsed={setIsDesktopCollapsed}
+          onSelectSegment={handleSelectSegment}
         />
       )}
 
