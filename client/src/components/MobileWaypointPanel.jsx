@@ -1,4 +1,4 @@
-import React, { useState, Fragment, useEffect } from 'react'
+import React, { useState, Fragment, useEffect, useRef } from 'react'
 import {
   ChevronUpIcon,
   ChevronDownIcon,
@@ -23,9 +23,26 @@ const MobileWaypointPanel = ({
   handleApplySpeedToAll,
 }) => {
 
+  const waypointRefs = useRef({})
+const segmentRefs = useRef({})
+
+
   useEffect(() => {
     console.log("🚀 segmentSpeeds updated:", segmentSpeeds)
   }, [segmentSpeeds])
+
+  useEffect(() => {
+    if (!isMobileCollapsed && selectedWaypoint && waypointRefs.current[selectedWaypoint]) {
+      waypointRefs.current[selectedWaypoint].scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    }
+  }, [selectedWaypoint, isMobileCollapsed]);
+  
+  useEffect(() => {
+    if (!isMobileCollapsed && expandedSegmentId && segmentRefs.current[expandedSegmentId]) {
+      segmentRefs.current[expandedSegmentId].scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    }
+  }, [expandedSegmentId, isMobileCollapsed]);
+  
 
 
   const [expandedPanel, setExpandedPanel] = useState(null)
@@ -89,12 +106,15 @@ const MobileWaypointPanel = ({
                 <button
                   className={`px-3 py-1.5 rounded-lg whitespace-nowrap text-xs font-medium transition-all duration-200 ${expandedPanel === wp.id ? 'bg-blue-500 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                   onClick={() => handleWaypointClick(wp.id)}
+                  ref={(el) => (waypointRefs.current[wp.id] = el)}
+
                 >
                   #{wp.id}
                 </button>
                 {index < waypoints.length - 1 && (
                   <div className="flex items-center px-2">
                     <button
+                            ref={(el) => (waypointRefs.current[wp.id] = el)}
                       onClick={() => handleSegmentClick(wp.id, waypoints[index + 1].id)}
                       className={`flex items-center gap-1 px-2 py-1 rounded-full border transition-all duration-200 ${expandedSegmentId === `${wp.id}-${waypoints[index + 1].id}`
                           ? 'bg-amber-100 border-amber-300 shadow-md scale-105'
@@ -126,6 +146,7 @@ const MobileWaypointPanel = ({
                   <div className="flex justify-between items-center">
                     <h3 className="text-base font-bold text-gray-800">Waypoint #{wp.id}</h3>
                     <button
+
                       onClick={() => onDeleteWaypoint(wp.id)}
                       className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-md text-xs font-medium transition-colors duration-200"
                     >

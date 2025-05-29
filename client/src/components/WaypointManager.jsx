@@ -22,7 +22,11 @@ export default function WaypointManager({
   onTargetClick,
   segmentSpeeds,
   setIsMobileCollapsed,
-  setExpandedSegmentId
+  setExpandedSegmentId,
+  isMobile,
+  isDesktop,
+  setIsDesktopCollapsed,
+  onClick
 }) {
   useMapEvents({
     click: async (e) => {
@@ -112,6 +116,7 @@ export default function WaypointManager({
               return recalculateHeadings(updated, targets)
             })
           }}
+          onClick={onClick}
         />
       ))}
 
@@ -139,10 +144,13 @@ export default function WaypointManager({
               const from = waypoints[i]
               const to = waypoints[i + 1]
               if (!from || !to) return
-              setIsMobileCollapsed(false)
+            
+              if (isMobile) setIsMobileCollapsed(false)
+              if (isDesktop) setIsDesktopCollapsed(false)
+            
               setExpandedSegmentId(`${from.id}-${to.id}`)
             }}
-            unitSystem={unitSystem}
+            
             
           />
         </>
@@ -174,7 +182,7 @@ export default function WaypointManager({
             
 
           }}
-          onClick={(targetId) => {
+          onTargetClick={(targetId) => {
             if (onTargetClick) onTargetClick(targetId)
           }}
 

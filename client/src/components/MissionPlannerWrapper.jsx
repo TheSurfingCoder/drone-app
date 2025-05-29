@@ -105,12 +105,18 @@ export default function MissionPlannerWrapper() {
 
 
   const handleSelectWaypoint = (id) => {
+    if (isMobile) setIsMobileCollapsed(false);
+    if (isDesktop) setIsDesktopCollapsed(false);
+  
+    setExpandedSegmentId(null); // Collapse any open speed editors
     setSelectedWaypoint(id);
+  
     const wp = waypoints.find((w) => w.id === id);
     if (wp && mapRef.current) {
-      mapRef.current.setView([wp.lat, wp.lng], 15); // zoom level optional
+      mapRef.current.setView([wp.lat, wp.lng], 19); // Adjust zoom if needed
     }
   };
+  
 
   const handleUpdateWaypoint = (id, updates) => {
     setWaypoints((prev) =>
@@ -219,7 +225,10 @@ export default function MissionPlannerWrapper() {
             expandedSegmentId={expandedSegmentId}
             setExpandedSegmentId={setExpandedSegmentId}
             setIsMobileCollapsed={setIsMobileCollapsed}
-          />
+            setIsDesktopCollapsed={setIsDesktopCollapsed}
+            isMobile={isMobile}
+            isDesktop={isDesktop}
+            onClick={handleSelectWaypoint}          />
         ) : (
           <CesiumMap
             waypoints={waypoints}

@@ -3,7 +3,7 @@ import L from 'leaflet'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-export default function WaypointMarker({ lat, lng, alt, index, unitSystem, onDragEnd, heading }) {
+export default function WaypointMarker({ lat, lng, alt, index, unitSystem, onDragEnd, heading, onClick }) {
   const altitude = alt ?? 0
   const formattedAlt =
     unitSystem === 'metric'
@@ -43,7 +43,11 @@ export default function WaypointMarker({ lat, lng, alt, index, unitSystem, onDra
           const { lat, lng } = marker.getLatLng()
           onDragEnd(lat, lng)
         },
+        click: () => {
+          onClick?.()
+        }
       }}
+     
     >
       
     </Marker>
