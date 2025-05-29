@@ -65,8 +65,8 @@ export default function DesktopWaypointPanel({
               <div
                 id={`waypoint-${wp.id}`}
                 className={`group p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
-                  selectedWaypoint === wp.id
-                    ? 'border-blue-300 bg-blue-50 shadow-md'
+                  selectedWaypoint === wp.id && !expandedSegmentId
+                  ? 'border-blue-300 bg-blue-50 shadow-md'
                     : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
                 }`}
                 onClick={() => handleWaypointClick(wp.id)}
@@ -75,8 +75,8 @@ export default function DesktopWaypointPanel({
                   <div className="flex items-center space-x-2">
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                        selectedWaypoint === wp.id
-                          ? 'bg-blue-500 text-white'
+                        selectedWaypoint === wp.id && !expandedSegmentId
+                        ? 'bg-blue-500 text-white'
                           : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
                       }`}
                     >

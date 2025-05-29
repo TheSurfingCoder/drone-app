@@ -79,6 +79,7 @@ export default function WaypointManager({
       {waypoints.map((wp, i) => (
         <WaypointMarker
           key={wp.id || i}
+          id={wp.id}
           lat={wp.lat}
           lng={wp.lng}
           alt={wp.groundHeight}

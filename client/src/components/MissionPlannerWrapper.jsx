@@ -42,6 +42,7 @@ export default function MissionPlannerWrapper() {
   const [expandedSegmentId, setExpandedSegmentId] = useState(null)
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false)
 
+
   useEffect(() => {
     if (waypoints.length >= 2) {
       setSegmentSpeeds((prev) => {
@@ -113,8 +114,21 @@ export default function MissionPlannerWrapper() {
   
     const wp = waypoints.find((w) => w.id === id);
     if (wp && mapRef.current) {
-      mapRef.current.setView([wp.lat, wp.lng], 19); // Adjust zoom if needed
-    }
+  const map = mapRef.current;
+  const zoom = 19;
+
+  // Convert lat/lng to container point (pixels)
+  const point = map.project([wp.lat, wp.lng], zoom);
+  const offsetY = -100; 
+
+  // Shift upward visually by adjusting the pixel Y
+  const newPoint = L.point(point.x, point.y - offsetY);
+
+  // Convert back to lat/lng and pan there
+  const targetLatLng = map.unproject(newPoint, zoom);
+  map.setView(targetLatLng, zoom);
+}
+
   };
   
 

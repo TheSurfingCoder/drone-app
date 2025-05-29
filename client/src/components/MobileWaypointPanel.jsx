@@ -42,6 +42,13 @@ const segmentRefs = useRef({})
       segmentRefs.current[expandedSegmentId].scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
     }
   }, [expandedSegmentId, isMobileCollapsed]);
+
+  useEffect(() => {
+    if (!isMobileCollapsed && selectedWaypoint != null) {
+      setExpandedPanel(selectedWaypoint)
+    }
+  }, [selectedWaypoint, isMobileCollapsed])
+  
   
 
 
@@ -70,11 +77,7 @@ const segmentRefs = useRef({})
     setExpandedPanel(null)
   }
 
-  const handleWaypointClick = (id) => {
-    setExpandedPanel(id)
-    setExpandedSegmentId(null)
-    onSelectWaypoint(id)
-  }
+ 
 
   return (
     <>
@@ -105,11 +108,11 @@ const segmentRefs = useRef({})
               <Fragment key={wp.id}>
                 <button
                   className={`px-3 py-1.5 rounded-lg whitespace-nowrap text-xs font-medium transition-all duration-200 ${expandedPanel === wp.id ? 'bg-blue-500 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                  onClick={() => handleWaypointClick(wp.id)}
+                  onClick={() => onSelectWaypoint(wp.id)}
                   ref={(el) => (waypointRefs.current[wp.id] = el)}
 
                 >
-                  #{wp.id}
+                  #{index+1}
                 </button>
                 {index < waypoints.length - 1 && (
                   <div className="flex items-center px-2">
