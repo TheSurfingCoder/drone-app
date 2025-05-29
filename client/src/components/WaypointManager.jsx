@@ -26,7 +26,8 @@ export default function WaypointManager({
   isMobile,
   isDesktop,
   setIsDesktopCollapsed,
-  onClick
+  onClick,
+  onSelectSegment
 }) {
   useMapEvents({
     click: async (e) => {
@@ -129,6 +130,7 @@ export default function WaypointManager({
           />
           <PolylineDecorator
             positions={waypoints.map((wp) => [wp.lat, wp.lng])}
+            waypoints={waypoints}
             patterns={[
               {
                 offset: '5%',
@@ -141,16 +143,7 @@ export default function WaypointManager({
               },
             ]}
             segmentSpeeds={segmentSpeeds}
-            onSegmentClick={(i) => {
-              const from = waypoints[i]
-              const to = waypoints[i + 1]
-              if (!from || !to) return
-            
-              if (isMobile) setIsMobileCollapsed(false)
-              if (isDesktop) setIsDesktopCollapsed(false)
-            
-              setExpandedSegmentId(`${from.id}-${to.id}`)
-            }}
+            onSelectSegment={onSelectSegment}
             
             
           />

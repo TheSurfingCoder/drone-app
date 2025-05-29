@@ -21,10 +21,11 @@ const MobileWaypointPanel = ({
   setExpandedSegmentId,
   handleSegmentSpeedChange,
   handleApplySpeedToAll,
+  handleSelectSegment
 }) => {
 
   const waypointRefs = useRef({})
-const segmentRefs = useRef({})
+  const segmentRefs = useRef({})
 
 
   useEffect(() => {
@@ -36,7 +37,7 @@ const segmentRefs = useRef({})
       waypointRefs.current[selectedWaypoint].scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
     }
   }, [selectedWaypoint, isMobileCollapsed]);
-  
+
   useEffect(() => {
     if (!isMobileCollapsed && expandedSegmentId && segmentRefs.current[expandedSegmentId]) {
       segmentRefs.current[expandedSegmentId].scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
@@ -48,8 +49,8 @@ const segmentRefs = useRef({})
       setExpandedPanel(selectedWaypoint)
     }
   }, [selectedWaypoint, isMobileCollapsed])
-  
-  
+
+
 
 
   const [expandedPanel, setExpandedPanel] = useState(null)
@@ -71,13 +72,9 @@ const segmentRefs = useRef({})
     return segmentSpeeds?.[index] ?? 10
   }
 
-  const handleSegmentClick = (fromId, toId) => {
-    const id = `${fromId}-${toId}`
-    setExpandedSegmentId(id === expandedSegmentId ? null : id)
-    setExpandedPanel(null)
-  }
 
- 
+
+
 
   return (
     <>
@@ -112,25 +109,28 @@ const segmentRefs = useRef({})
                   ref={(el) => (waypointRefs.current[wp.id] = el)}
 
                 >
-                  #{index+1}
+                  #{index + 1}
                 </button>
                 {index < waypoints.length - 1 && (
                   <div className="flex items-center px-2">
                     <button
-                            ref={(el) => (waypointRefs.current[wp.id] = el)}
-                      onClick={() => handleSegmentClick(wp.id, waypoints[index + 1].id)}
+                      ref={(el) => {
+                        const segId = `${wp.id}-${waypoints[index + 1].id}`;
+                        segmentRefs.current[segId] = el;
+                      }}
+                      onClick={() => handleSelectSegment(wp.id, waypoints[index + 1].id)}
                       className={`flex items-center gap-1 px-2 py-1 rounded-full border transition-all duration-200 ${expandedSegmentId === `${wp.id}-${waypoints[index + 1].id}`
-                          ? 'bg-amber-100 border-amber-300 shadow-md scale-105'
-                          : 'bg-blue-50 hover:bg-blue-100 border-blue-200'
+                        ? 'bg-amber-100 border-amber-300 shadow-md scale-105'
+                        : 'bg-blue-50 hover:bg-blue-100 border-blue-200'
                         }`}
                     >
                       <div className={`w-2 h-2 rounded-full ${expandedSegmentId === `${wp.id}-${waypoints[index + 1].id}`
-                          ? 'bg-amber-500 animate-bounce'
-                          : 'bg-blue-500 animate-pulse'
+                        ? 'bg-amber-500 animate-bounce'
+                        : 'bg-blue-500 animate-pulse'
                         }`} />
                       <span className={`text-xs font-medium ${expandedSegmentId === `${wp.id}-${waypoints[index + 1].id}`
-                          ? 'text-amber-700'
-                          : 'text-blue-700'
+                        ? 'text-amber-700'
+                        : 'text-blue-700'
                         }`}>
                         {getSegmentSpeed(wp.id, waypoints[index + 1].id).toFixed(1)}
                       </span>

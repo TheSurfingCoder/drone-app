@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import L from 'leaflet'
 import 'leaflet-polylinedecorator'
 
-export default function PolylineDecorator({ positions, segmentSpeeds, onSegmentClick, unitSystem }) {
+export default function PolylineDecorator({ positions, segmentSpeeds, onSelectSegment, unitSystem, waypoints }) {
   const map = useMap()
 
   useEffect(() => {
@@ -31,9 +31,14 @@ export default function PolylineDecorator({ positions, segmentSpeeds, onSegmentC
       segment.getElement?.()?.style?.setProperty('cursor', 'pointer')
 
       segment.on('click', (e) => {
-        e.originalEvent.stopPropagation()
-        if (onSegmentClick) onSegmentClick(i)
-      })
+        e.originalEvent.stopPropagation();
+        const from = waypoints[i];
+        const to = waypoints[i + 1];
+        if (onSelectSegment && from && to) {
+          onSelectSegment(from.id, to.id);
+        }
+      });
+      
 
       // Midpoint label
       const midpoint = [
@@ -72,9 +77,13 @@ export default function PolylineDecorator({ positions, segmentSpeeds, onSegmentC
       })
 
       marker.on('click', (e) => {
-        e.originalEvent.stopPropagation()
-        if (onSegmentClick) onSegmentClick(i)
-      })
+        e.originalEvent.stopPropagation();
+        const from = waypoints[i];
+        const to = waypoints[i + 1];
+        if (onSelectSegment && from && to) {
+          onSelectSegment(from.id, to.id);
+        }
+      });
 
       marker.addTo(layerGroup)
     }
@@ -82,7 +91,7 @@ export default function PolylineDecorator({ positions, segmentSpeeds, onSegmentC
     return () => {
       map.removeLayer(layerGroup)
     }
-  }, [map, positions, segmentSpeeds, onSegmentClick])
+  }, [map, positions, segmentSpeeds, onSelectSegment])
 
   return null
 }
