@@ -40,8 +40,10 @@ export default function MissionPlannerWrapper() {
   const [selectedWaypoint, setSelectedWaypoint] = useState(null);
   const [isMobileCollapsed, setIsMobileCollapsed] = useState(true)
   const [expandedSegmentId, setExpandedSegmentId] = useState(null)
-  const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false)
+  const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(true)
+  const hasAutoOpenedDesktopPanel = useRef(false); // tracks if we've already opened it
 
+  const isDesktop = !isMobile;
 
   useEffect(() => {
     if (waypoints.length >= 2) {
@@ -55,6 +57,21 @@ export default function MissionPlannerWrapper() {
       })
     }
   }, [waypoints])
+
+
+  useEffect(() => {
+    if (
+      waypoints.length === 1 &&     // just added first
+      isDesktop &&                  // desktop only
+      isDesktopCollapsed &&         // currently collapsed
+      !hasAutoOpenedDesktopPanel.current // hasn’t auto-opened yet
+    ) {
+      setIsDesktopCollapsed(false);           // open the panel
+      hasAutoOpenedDesktopPanel.current = true; // mark it as opened
+    }
+  }, [waypoints, isDesktop, isDesktopCollapsed]);
+  
+
 
 
 
@@ -79,7 +96,7 @@ export default function MissionPlannerWrapper() {
     return isMobile;
   }
 
-  const isDesktop = !isMobile;
+  
 
   const handleSegmentSpeedChange = (fromId, toId, newSpeed) => {
     const fromIndex = waypoints.findIndex(wp => wp.id === fromId)
@@ -248,7 +265,7 @@ export default function MissionPlannerWrapper() {
       </div>
 
       {/* 🗺 Map View (with top bar padding) */}
-      <div className="flex-1">
+      <div className="flex-1 relative">
         {viewMode === '2d' ? (
           <MapComponent
             waypoints={waypoints}
@@ -290,6 +307,30 @@ export default function MissionPlannerWrapper() {
             setTargets={setTargets}
           />
         )}
+
+{isDesktop && (
+  
+        <DesktopWaypointPanel
+          waypoints={waypoints}
+          selectedWaypoint={selectedWaypoint}
+          onSelectWaypoint={handleSelectWaypoint}
+          onUpdateWaypoint={handleUpdateWaypoint}
+          onDeleteWaypoint={handleDeleteWaypoint}
+          segmentSpeeds={segmentSpeeds}
+          expandedSegmentId={expandedSegmentId}
+          setExpandedSegmentId={setExpandedSegmentId}
+          handleSegmentSpeedChange={handleSegmentSpeedChange}
+          handleApplySpeedToAll={handleApplySpeedToAll}
+          setSelectedTargetId={setSelectedTargetId}
+          setShowTargetModal={setShowTargetModal}
+          onModeChange={setMapMode}
+          unitSystem={unitSystem}
+          isDesktopCollapsed={isDesktopCollapsed}
+          setIsDesktopCollapsed={setIsDesktopCollapsed}
+          onSelectSegment={handleSelectSegment}
+        />
+          
+      )}
       </div>
 
       {/* ✅ Modal rendered globally, not inside map logic */}
@@ -393,27 +434,7 @@ export default function MissionPlannerWrapper() {
           handleSelectSegment={handleSelectSegment}
         />
       )}
-      {isDesktop && (
-        <DesktopWaypointPanel
-          waypoints={waypoints}
-          selectedWaypoint={selectedWaypoint}
-          onSelectWaypoint={handleSelectWaypoint}
-          onUpdateWaypoint={handleUpdateWaypoint}
-          onDeleteWaypoint={handleDeleteWaypoint}
-          segmentSpeeds={segmentSpeeds}
-          expandedSegmentId={expandedSegmentId}
-          setExpandedSegmentId={setExpandedSegmentId}
-          handleSegmentSpeedChange={handleSegmentSpeedChange}
-          handleApplySpeedToAll={handleApplySpeedToAll}
-          setSelectedTargetId={setSelectedTargetId}
-          setShowTargetModal={setShowTargetModal}
-          onModeChange={setMapMode}
-          unitSystem={unitSystem}
-          isDesktopCollapsed={isDesktopCollapsed}
-          setIsDesktopCollapsed={setIsDesktopCollapsed}
-          onSelectSegment={handleSelectSegment}
-        />
-      )}
+     
 
 
     </div>
