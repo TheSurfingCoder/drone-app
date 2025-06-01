@@ -18,7 +18,8 @@ export default function DesktopWaypointPanel({
   handleApplySpeedToAll,
   expandedSegmentId,
   setExpandedSegmentId,
-  onSelectSegment
+  onSelectSegment,
+  setSegmentSpeeds
 }) {
 
 
@@ -32,23 +33,32 @@ export default function DesktopWaypointPanel({
       });
     }
   }, [expandedSegmentId]);
+
+  useEffect(() => {
+    if (selectedWaypoint != null) {
+      const el = document.getElementById(`waypoint-${selectedWaypoint}`)
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [selectedWaypoint])
   
+
 
 
   const getTotalElevation = (wp) => (wp.groundHeight ?? 0) + (wp.height ?? 0)
 
   const handleWaypointClick = (id) => {
-    onSelectWaypoint(id)
-    setExpandedSegmentId(null)
+    
     const el = document.getElementById(`waypoint-${id}`)
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+
+      onSelectWaypoint(id)
+    setExpandedSegmentId(null)
   }
 
   return (
     <div
-      className={`absolute md:block fixed right-0 top-0 bottom-0 z-30 transition-all duration-300 ease-out ${
-        isDesktopCollapsed ? 'translate-x-full' : 'translate-x-0'
-      }`}
+      className={`absolute md:block fixed right-0 top-0 bottom-0 z-30 transition-all duration-300 ease-out ${isDesktopCollapsed ? 'translate-x-full' : 'translate-x-0'
+        }`}
     >
       <button
         onClick={() => setIsDesktopCollapsed(!isDesktopCollapsed)}
@@ -80,26 +90,24 @@ export default function DesktopWaypointPanel({
             <React.Fragment key={wp.id}>
               <div
                 id={`waypoint-${wp.id}`}
-                className={`group p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
-                  selectedWaypoint === wp.id && !expandedSegmentId
-                  ? 'border-blue-300 bg-blue-50 shadow-md'
+                className={`group p-4 rounded-xl border transition-all duration-200 cursor-pointer ${selectedWaypoint === wp.id && !expandedSegmentId
+                    ? 'border-blue-300 bg-blue-50 shadow-md'
                     : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
-                }`}
+                  }`}
                 onClick={() => handleWaypointClick(wp.id)}
               >
                 <div className="flex justify-between items-center mb-2">
                   <div className="flex items-center space-x-2">
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                        selectedWaypoint === wp.id && !expandedSegmentId
-                        ? 'bg-blue-500 text-white'
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${selectedWaypoint === wp.id && !expandedSegmentId
+                          ? 'bg-blue-500 text-white'
                           : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
-                      }`}
+                        }`}
                     >
-                      {i+1}
+                      {i + 1}
                     </div>
                     <span className="font-medium text-gray-800">
-                      Waypoint #{i+1}
+                      Waypoint #{i + 1}
                     </span>
                   </div>
                   <button
@@ -192,22 +200,39 @@ export default function DesktopWaypointPanel({
                 </div>
               </div>
 
-              {i < waypoints.length - 1 && (
+              {segmentSpeeds?.[i]  && waypoints[i + 1] && (
                 <SpeedConnector
-                speed={segmentSpeeds?.[i] ?? 10}
+                speed={typeof segmentSpeeds?.[i]?.speed === 'number' ? segmentSpeeds[i].speed : 10}
                 isExpanded={expandedSegmentId === `${wp.id}-${waypoints[i + 1].id}`}
-                highlight={expandedSegmentId === `${wp.id}-${waypoints[i + 1].id}`}
-                onToggle={() => onSelectSegment(wp.id, waypoints[i + 1].id)}
-                onChange={(newSpeed) =>
-                  handleSegmentSpeedChange(wp.id, waypoints[i + 1].id, newSpeed)
-                }
-                onApplyToAll={handleApplySpeedToAll}
-                ref={(el) =>
-                  (segmentRefs.current[`${wp.id}-${waypoints[i + 1].id}`] = el)
-                }
-              />
-              
-              
+                  highlight={expandedSegmentId === `${wp.id}-${waypoints[i + 1].id}`}
+                  onToggle={() => onSelectSegment(wp.id, waypoints[i + 1].id)}
+                  onChange={(newSpeed) =>
+                    handleSegmentSpeedChange(wp.id, waypoints[i + 1].id, newSpeed)
+                  }
+                  onApplyToAll={handleApplySpeedToAll}
+                  interpolateHeading={segmentSpeeds[i].interpolateHeading}
+                  isCurved={segmentSpeeds[i].isCurved}
+                  onToggleInterpolate={() => {
+                    const updated = [...segmentSpeeds]
+                    updated[i] = {
+                      ...updated[i],
+                      interpolateHeading: !updated[i].interpolateHeading
+                    }
+                    setSegmentSpeeds(updated)
+                  }}
+                  onToggleCurve={() => {
+                    const updated = [...segmentSpeeds]
+                    updated[i] = {
+                      ...updated[i],
+                      isCurved: !updated[i].isCurved
+                    }
+                    setSegmentSpeeds(updated)
+                  }}
+
+                  ref={(el) =>
+                    (segmentRefs.current[`${wp.id}-${waypoints[i + 1].id}`] = el)
+                  }
+                />
               )}
             </React.Fragment>
           ))}

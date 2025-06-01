@@ -25,7 +25,7 @@ export function estimateDuration(waypoints, segmentSpeeds) {
   for (let i = 0; i < waypoints.length - 1; i++) {
     const from = waypoints[i];
     const to = waypoints[i + 1];
-    const speed = segmentSpeeds[i] ?? 5; // fallback to 5 m/s if undefined
+    const speed = segmentSpeeds?.[i]?.speed ?? 5; // fallback to 5 m/s if undefined
 
     const dx = to.lng - from.lng;
     const dy = to.lat - from.lat;

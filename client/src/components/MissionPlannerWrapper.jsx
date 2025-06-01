@@ -46,17 +46,48 @@ export default function MissionPlannerWrapper() {
   const isDesktop = !isMobile;
 
   useEffect(() => {
+    console.log("🧭 Updated waypoints:", waypoints);
+  }, [waypoints]);
+  
+
+  useEffect(() => {
     if (waypoints.length >= 2) {
       setSegmentSpeeds((prev) => {
         const needed = waypoints.length - 1
-        if (prev.length === needed) return prev
-        if (prev.length < needed) {
-          return [...prev, ...Array(needed - prev.length).fill(10)]
+  
+        // If segment count is already correct, update only fromId/toId if needed
+        if (prev.length === needed) {
+          return prev.map((seg, i) => ({
+            ...seg,
+            fromId: waypoints[i].id,
+            toId: waypoints[i + 1].id
+          }))
         }
-        return prev.slice(0, needed) // in case waypoints are deleted
+  
+        // If too few segments, add new ones
+        if (prev.length < needed) {
+          const newSegments = []
+          for (let i = prev.length; i < needed; i++) {
+            newSegments.push({
+              fromId: waypoints[i].id,
+              toId: waypoints[i + 1].id,
+              speed: 10,
+              interpolateHeading: true,
+              isCurved: false
+            })
+          }
+          return [...prev, ...newSegments]
+        }
+  
+        // If too many segments (waypoints were deleted), truncate
+        return prev.slice(0, needed)
       })
+    } else {
+      // If fewer than 2 waypoints, clear segments
+      setSegmentSpeeds([])
     }
   }, [waypoints])
+  
 
 
   useEffect(() => {
@@ -102,16 +133,20 @@ export default function MissionPlannerWrapper() {
     const fromIndex = waypoints.findIndex(wp => wp.id === fromId)
     const toIndex = waypoints.findIndex(wp => wp.id === toId)
     const index = Math.min(fromIndex, toIndex)
-
+  
     if (index < 0 || index >= segmentSpeeds.length) {
       console.warn("Invalid segment index:", index)
       return
     }
-
+  
     const newSpeeds = [...segmentSpeeds]
-    newSpeeds[index] = newSpeed
+    newSpeeds[index] = {
+      ...newSpeeds[index],      // keep existing data (interpolateHeading, etc)
+      speed: newSpeed           // only update speed
+    }
     setSegmentSpeeds(newSpeeds)
   }
+  
 
 
   const handleApplySpeedToAll = (newSpeed) => {
@@ -328,6 +363,7 @@ export default function MissionPlannerWrapper() {
           isDesktopCollapsed={isDesktopCollapsed}
           setIsDesktopCollapsed={setIsDesktopCollapsed}
           onSelectSegment={handleSelectSegment}
+          setSegmentSpeeds={setSegmentSpeeds}
         />
           
       )}

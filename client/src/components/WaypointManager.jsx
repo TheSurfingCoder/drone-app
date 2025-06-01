@@ -71,7 +71,7 @@ export default function WaypointManager({
         setTargetPendingFocus({ ...newPoint, id: newTargetId }) // ✅ assign it here
         setShowTargetModal(true)
       }
-      console.log('waypoints', waypoints)
+    
     },
   })
 

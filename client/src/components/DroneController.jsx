@@ -55,7 +55,7 @@ export default function DroneController({
       }
 
       const to = waypoints[idx + 1]
-      const speed = segmentSpeeds?.[idx] ?? 10
+      const speed = segmentSpeeds?.[idx]?.speed ?? 10
 
       if (lastTimeRef.current === null) {
         lastTimeRef.current = timestamp

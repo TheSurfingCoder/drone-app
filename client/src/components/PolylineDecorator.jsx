@@ -14,7 +14,7 @@ export default function PolylineDecorator({ positions, segmentSpeeds, onSelectSe
     for (let i = 0; i < positions.length - 1; i++) {
       const from = positions[i]
       const to = positions[i + 1]
-      const speed = segmentSpeeds[i] ?? 10
+      const speed = segmentSpeeds?.[i]?.speed ?? 10
       const displaySpeed = unitSystem === 'metric'
         ? `${speed.toFixed(1)} m/s`
         : `${(speed * 2.23694).toFixed(1)} mph`
