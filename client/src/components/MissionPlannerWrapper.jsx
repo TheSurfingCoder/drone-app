@@ -44,6 +44,9 @@ export default function MissionPlannerWrapper() {
   const hasAutoOpenedDesktopPanel = useRef(false); // tracks if we've already opened it
 
   const isDesktop = !isMobile;
+  const defaultSpeed = 10
+const defaultTightness = 15
+
 
   useEffect(() => {
     console.log("🧭 Updated waypoints:", waypoints);
@@ -55,12 +58,13 @@ export default function MissionPlannerWrapper() {
       setSegmentSpeeds((prev) => {
         const needed = waypoints.length - 1
   
-        // If segment count is already correct, update only fromId/toId if needed
+        // If segment count is already correct, update only fromId/toId
         if (prev.length === needed) {
           return prev.map((seg, i) => ({
             ...seg,
             fromId: waypoints[i].id,
-            toId: waypoints[i + 1].id
+            toId: waypoints[i + 1].id,
+            curveTightness: seg.curveTightness ?? 15  // ← ensure it's present
           }))
         }
   
@@ -73,7 +77,8 @@ export default function MissionPlannerWrapper() {
               toId: waypoints[i + 1].id,
               speed: 10,
               interpolateHeading: true,
-              isCurved: false
+              isCurved: false,
+              curveTightness: 15  // ← default value
             })
           }
           return [...prev, ...newSegments]
@@ -83,7 +88,6 @@ export default function MissionPlannerWrapper() {
         return prev.slice(0, needed)
       })
     } else {
-      // If fewer than 2 waypoints, clear segments
       setSegmentSpeeds([])
     }
   }, [waypoints])
@@ -104,7 +108,16 @@ export default function MissionPlannerWrapper() {
   
 
 
-
+  const handleCurveTightnessChange = (fromId, toId, newTightness) => {
+    setSegmentSpeeds((prev) =>
+      prev.map((seg) =>
+        seg.fromId === fromId && seg.toId === toId
+          ? { ...seg, curveTightness: newTightness }
+          : seg
+      )
+    )
+  }
+  
 
 
   const selectedTarget = targets.find((t) => t.id === selectedTargetId)
@@ -364,6 +377,7 @@ export default function MissionPlannerWrapper() {
           setIsDesktopCollapsed={setIsDesktopCollapsed}
           onSelectSegment={handleSelectSegment}
           setSegmentSpeeds={setSegmentSpeeds}
+          handleCurveTightnessChange={handleCurveTightnessChange}
         />
           
       )}

@@ -12,7 +12,8 @@ export default function SpeedConnector({
   isCurved,
   onToggleInterpolate,
   onToggleCurve,
-  
+  curveTightness,
+  onCurveTightnessChange,
 }) {
   return (
     <div className="px-4 py-2" ref={speedRef}>
@@ -28,18 +29,18 @@ export default function SpeedConnector({
       {isExpanded && (
         <div className="mt-2 p-3 bg-white border border-gray-200 rounded-lg shadow-sm space-y-3">
           <input
-  type="range"
-  min="0.1"
-  max="20"
-  step="0.1"
-  value={speed}
-  onChange={(e) => {
-    const newVal = parseFloat(e.target.value)
-    console.log("Slider changed to:", newVal)
-    onChange(newVal)
-  }}
-  className="w-full"
-/>
+            type="range"
+            min="0.1"
+            max="20"
+            step="0.1"
+            value={speed}
+            onChange={(e) => {
+              const newVal = parseFloat(e.target.value)
+              console.log("Slider changed to:", newVal)
+              onChange(newVal)
+            }}
+            className="w-full"
+          />
 
           <button
             onClick={() => onApplyToAll(speed)}
@@ -71,6 +72,28 @@ export default function SpeedConnector({
               ~ Curve
             </button>
           </div>
+
+          {isCurved && (
+            <div className="mt-2">
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Curve Tightness
+              </label>
+              <input
+                type="range"
+                min="5"
+                max="100"
+                step="1"
+                value={curveTightness ?? 15}
+                onChange={(e) =>
+                  onCurveTightnessChange?.(parseInt(e.target.value))
+                }
+                className="w-full"
+              />
+              <div className="text-right text-xs text-gray-500 mt-1">
+                {curveTightness ?? 15} meters
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

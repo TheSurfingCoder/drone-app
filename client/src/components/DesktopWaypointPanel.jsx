@@ -19,7 +19,8 @@ export default function DesktopWaypointPanel({
   expandedSegmentId,
   setExpandedSegmentId,
   onSelectSegment,
-  setSegmentSpeeds
+  setSegmentSpeeds,
+  handleCurveTightnessChange
 }) {
 
 
@@ -40,18 +41,18 @@ export default function DesktopWaypointPanel({
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
   }, [selectedWaypoint])
-  
+
 
 
 
   const getTotalElevation = (wp) => (wp.groundHeight ?? 0) + (wp.height ?? 0)
 
   const handleWaypointClick = (id) => {
-    
+
     const el = document.getElementById(`waypoint-${id}`)
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
 
-      onSelectWaypoint(id)
+    onSelectWaypoint(id)
     setExpandedSegmentId(null)
   }
 
@@ -91,8 +92,8 @@ export default function DesktopWaypointPanel({
               <div
                 id={`waypoint-${wp.id}`}
                 className={`group p-4 rounded-xl border transition-all duration-200 cursor-pointer ${selectedWaypoint === wp.id && !expandedSegmentId
-                    ? 'border-blue-300 bg-blue-50 shadow-md'
-                    : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                  ? 'border-blue-300 bg-blue-50 shadow-md'
+                  : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
                   }`}
                 onClick={() => handleWaypointClick(wp.id)}
               >
@@ -100,8 +101,8 @@ export default function DesktopWaypointPanel({
                   <div className="flex items-center space-x-2">
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${selectedWaypoint === wp.id && !expandedSegmentId
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
                         }`}
                     >
                       {i + 1}
@@ -200,10 +201,10 @@ export default function DesktopWaypointPanel({
                 </div>
               </div>
 
-              {segmentSpeeds?.[i]  && waypoints[i + 1] && (
+              {segmentSpeeds?.[i] && waypoints[i + 1] && (
                 <SpeedConnector
-                speed={typeof segmentSpeeds?.[i]?.speed === 'number' ? segmentSpeeds[i].speed : 10}
-                isExpanded={expandedSegmentId === `${wp.id}-${waypoints[i + 1].id}`}
+                  speed={typeof segmentSpeeds?.[i]?.speed === 'number' ? segmentSpeeds[i].speed : 10}
+                  isExpanded={expandedSegmentId === `${wp.id}-${waypoints[i + 1].id}`}
                   highlight={expandedSegmentId === `${wp.id}-${waypoints[i + 1].id}`}
                   onToggle={() => onSelectSegment(wp.id, waypoints[i + 1].id)}
                   onChange={(newSpeed) =>
@@ -228,6 +229,11 @@ export default function DesktopWaypointPanel({
                     }
                     setSegmentSpeeds(updated)
                   }}
+                  curveTightness={segmentSpeeds[i].curveTightness}
+                  onCurveTightnessChange={(newVal) =>
+                    handleCurveTightnessChange(wp.id, waypoints[i + 1].id, newVal)
+                  }
+
 
                   ref={(el) =>
                     (segmentRefs.current[`${wp.id}-${waypoints[i + 1].id}`] = el)
