@@ -163,10 +163,14 @@ const defaultTightness = 15
 
 
   const handleApplySpeedToAll = (newSpeed) => {
-    const newSpeeds = Array(waypoints.length - 1).fill(newSpeed)
-    setSegmentSpeeds(newSpeeds)
-    console.log("🚀 Applied speed to all segments:", newSpeeds)
+    const updated = segmentSpeeds.map((seg) => ({
+      ...seg,
+      speed: newSpeed,
+    }))
+    setSegmentSpeeds(updated)
+    console.log("🚀 Applied speed to all segments:", updated)
   }
+  
 
 
 
@@ -297,6 +301,7 @@ const defaultTightness = 15
             setCountdownMessage={setCountdownMessage}
             segmentSpeeds={segmentSpeeds}
             unitSystem={unitSystem}
+            mapRef={mapRef}
           />
         </div>
         <div>

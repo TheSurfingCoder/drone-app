@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { moveToward } from '../utils/droneMovement'
+import { generateCurvePoints } from '../utils/geometry'
+import { getBezierCurvePoints } from '../utils/geometry'
 
 export default function DroneController({
   waypoints,
@@ -12,12 +14,18 @@ export default function DroneController({
   showCountdown,
   setShowCountdown,
   setCountdownMessage,
+  mapRef
 }) {
   const [clicked, setClicked] = useState(false)
   const animationRef = useRef()
   const lastTimeRef = useRef(null)
-  const currentIndexRef = useRef(0)
+  const currentPathRef = useRef([])
+  const currentPathIndexRef = useRef(0)
   const currentPositionRef = useRef(null)
+  const [droneHeading, setDroneHeading] = useState(null)
+const [dronePitch, setDronePitch] = useState(null)
+
+
 
   const handleStartMission = () => {
     setClicked(true)
@@ -39,23 +47,62 @@ export default function DroneController({
     if (showCountdown) return
     if (!waypoints || waypoints.length < 2) return
 
-    currentIndexRef.current = 0
-    const initial = [waypoints[0].lat, waypoints[0].lng]
-    currentPositionRef.current = initial
-    setDronePosition(initial)
+    // Build the full path
+    const fullPath = []
+
+    console.log("Map ref at time of sim init:", mapRef?.current)
+
+
+    for (let i = 0; i < waypoints.length - 1; i++) {
+      const from = waypoints[i]
+      const to = waypoints[i + 1]
+      const seg = segmentSpeeds?.[i]
+      const bezierPoints = getBezierCurvePoints(from, to, seg.curveTightness ?? 15, 20)
+
+      
+
+      if (seg?.isCurved) {
+        const curvePoints = generateCurvePoints(from, to, seg.curveTightness ?? 15, mapRef.current)
+        console.log("🌀 Curve point count:", curvePoints.length)
+        fullPath.push(...bezierPoints)
+
+      }
+      else if (i === 0) {
+        fullPath.push({ lat: from.lat, lng: from.lng }) // Add only once at the beginning
+      }
+      fullPath.push({ lat: to.lat, lng: to.lng })       // Add the `to` for each segment
+      
+     
+
+    }
+
+    // Push last waypoint explicitly
+    fullPath.push({ lat: waypoints[waypoints.length - 1].lat, lng: waypoints[waypoints.length - 1].lng })
+
+    currentPathRef.current = fullPath
+    currentPathIndexRef.current = 0
+    currentPositionRef.current = fullPath[0]
+    setDronePosition(fullPath[0])
     lastTimeRef.current = null
+    console.log("🚁 Built fullPath:", fullPath)
+    console.log("👣 Path point count:", fullPath.length)
+
 
     const step = (timestamp) => {
-      const idx = currentIndexRef.current
-      if (idx >= waypoints.length - 1) {
+      const idx = currentPathIndexRef.current
+      if (idx >= currentPathRef.current.length - 1) {
         const now = new Date().toLocaleTimeString()
         setLogs((prev) => [...prev, `[${now}] 🏁 Mission complete`])
         cancelAnimationFrame(animationRef.current)
         return
       }
+      console.log(`🛰️ Moving to index ${currentPathIndexRef.current + 1} of ${fullPath.length}`);
+      
+      const to = currentPathRef.current[idx + 1]
+     
 
-      const to = waypoints[idx + 1]
-      const speed = segmentSpeeds?.[idx]?.speed ?? 10
+      const segmentIdx = Math.min(waypoints.length - 2, idx)
+      const speed = segmentSpeeds?.[segmentIdx]?.speed ?? 10
 
       if (lastTimeRef.current === null) {
         lastTimeRef.current = timestamp
@@ -68,7 +115,7 @@ export default function DroneController({
 
       const nextPos = moveToward({
         droneLatLng: currentPositionRef.current,
-        targetLatLng: [to.lat, to.lng],
+        targetLatLng: to,
         speed,
         deltaTime,
       })
@@ -77,15 +124,26 @@ export default function DroneController({
       setDronePosition(nextPos)
 
       const dist = Math.sqrt(
-        Math.pow(to.lat - nextPos[0], 2) +
-        Math.pow(to.lng - nextPos[1], 2)
+        Math.pow(to.lat - nextPos.lat, 2) + Math.pow(to.lng - nextPos.lng, 2)
       )
+      
 
       if (dist < 0.00001) {
         const now = new Date().toLocaleTimeString()
-        currentIndexRef.current += 1
-        setLogs((prev) => [...prev, `[${now}] ✅ Arrived at waypoint ${idx + 1}`])
+        currentPathIndexRef.current += 1
+        setLogs((prev) => [...prev, `[${now}] ✅ Passed point ${idx + 1}`])
+        console.log("📏 Distance to next point:", dist)
+
       }
+
+      if (isNaN(dist)) {
+        console.error("❌ Distance calculation returned NaN", { to, nextPos })
+      }
+      
+
+      console.log("🚶 Current:", currentPositionRef.current)
+      console.log("🎯 Target:", to)
+      console.log("📏 Dist:", dist)
 
       animationRef.current = requestAnimationFrame(step)
     }

@@ -33,17 +33,14 @@ export default function SpeedConnector({
             min="0.1"
             max="20"
             step="0.1"
-            value={speed}
-            onChange={(e) => {
-              const newVal = parseFloat(e.target.value)
-              console.log("Slider changed to:", newVal)
-              onChange(newVal)
-            }}
+            value={typeof speed === 'number' ? speed : 10}
+            onChange={(e) => onChange(parseFloat(e.target.value))}
             className="w-full"
           />
 
+          {/* ✅ Restore Apply to All */}
           <button
-            onClick={() => onApplyToAll(speed)}
+            onClick={() => onApplyToAll?.(speed)}
             className="text-xs text-blue-600 underline"
           >
             Apply to All
@@ -84,9 +81,7 @@ export default function SpeedConnector({
                 max="100"
                 step="1"
                 value={curveTightness ?? 15}
-                onChange={(e) =>
-                  onCurveTightnessChange?.(parseInt(e.target.value))
-                }
+                onChange={(e) => onCurveTightnessChange?.(parseInt(e.target.value))}
                 className="w-full"
               />
               <div className="text-right text-xs text-gray-500 mt-1">
