@@ -1,18 +1,18 @@
-import AltitudeSlider from './AltitudeSlider'; // adjust path if needed
-import React from 'react';
-import { Cartesian3 } from 'cesium';
+import AltitudeSlider from './AltitudeSlider' // adjust path if needed
+import React from 'react'
+import { Cartesian3 } from 'cesium'
 
 export default function WaypointList({ waypoints, setWaypoints, unitSystem }) {
   const handleDelete = (indexToDelete) => {
-    setWaypoints((prev) => prev.filter((_, i) => i !== indexToDelete));
-  };
+    setWaypoints((prev) => prev.filter((_, i) => i !== indexToDelete))
+  }
 
   const formatAlt = (alt) => {
-    const altVal = alt ?? 0;
+    const altVal = alt ?? 0
     return unitSystem === 'metric'
       ? `${altVal.toFixed(1)} m`
-      : `${(altVal * 3.28084).toFixed(1)} ft`;
-  };
+      : `${(altVal * 3.28084).toFixed(1)} ft`
+  }
 
   return (
     <div
@@ -41,19 +41,27 @@ export default function WaypointList({ waypoints, setWaypoints, unitSystem }) {
             <div>Height from Base: {wp.height}</div>
 
             <AltitudeSlider
-              value={wp.height+wp.groundHeight ?? 0}
+              value={wp.height + wp.groundHeight ?? 0}
               minHeight={0}
               unitSystem={unitSystem}
               onChange={(newHeight) => {
                 setWaypoints((prev) =>
                   prev.map((w, idx) =>
-                    idx === i ? { ...w, height: newHeight, elevatedPosition: Cartesian3.fromDegrees(wp.lng, wp.lat, wp.groundHeight + newHeight) } : w
-                  )
-                );
+                    idx === i
+                      ? {
+                          ...w,
+                          height: newHeight,
+                          elevatedPosition: Cartesian3.fromDegrees(
+                            wp.lng,
+                            wp.lat,
+                            wp.groundHeight + newHeight,
+                          ),
+                        }
+                      : w,
+                  ),
+                )
               }}
             />
-            
-
 
             <button
               onClick={() => handleDelete(i)}
@@ -73,5 +81,5 @@ export default function WaypointList({ waypoints, setWaypoints, unitSystem }) {
         ))}
       </ul>
     </div>
-  );
+  )
 }

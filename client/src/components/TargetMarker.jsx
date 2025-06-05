@@ -2,7 +2,7 @@ import React from 'react'
 import { Marker } from 'react-leaflet'
 import L from 'leaflet'
 
-export default function TargetMarker({ lat, lng, alt, index, unitSystem, id, onDragEnd, position, onClick }) {
+export default function TargetMarker({ id, onDragEnd, position, onClick }) {
   const targetIcon = L.divIcon({
     className: '',
     iconSize: [20, 20],
@@ -33,10 +33,9 @@ export default function TargetMarker({ lat, lng, alt, index, unitSystem, id, onD
           onDragEnd(id, lat, lng)
         },
         click: () => {
-          if(onClick) onClick(id)
-        }
+          if (onClick) onClick(id)
+        },
       }}
-     
     />
   )
 }

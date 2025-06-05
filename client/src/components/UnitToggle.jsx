@@ -1,4 +1,4 @@
-import React from 'react';
+import React from 'react'
 
 export default function UnitToggle({ unitSystem, onChange }) {
   return (
@@ -13,5 +13,5 @@ export default function UnitToggle({ unitSystem, onChange }) {
         <option value="imperial">Imperial (ft)</option>
       </select>
     </div>
-  );
+  )
 }

@@ -1,5 +1,5 @@
 import React from 'react'
-import { useMapEvents, Polyline, Marker, Tooltip } from 'react-leaflet'
+import { useMapEvents, Polyline, Marker } from 'react-leaflet'
 import L from 'leaflet'
 import WaypointMarker from './WaypointMarker.jsx'
 import TargetMarker from './TargetMarker.jsx'
@@ -11,33 +11,6 @@ import PolylineDecorator from './PolylineDecorator.jsx'
 import { Cartesian3 } from 'cesium'
 
 const DRONE_HEADING_COLOR = '#00bcd4'
-
-function computeCurvePoints(from, to, strength = 0.3, segments = 20) {
-  const latlngs = []
-  const midLat = (from.lat + to.lat) / 2
-  const midLng = (from.lng + to.lng) / 2
-  const offsetLat = (to.lng - from.lng) * strength
-  const offsetLng = (from.lat - to.lat) * strength
-  const control = {
-    lat: midLat + offsetLat,
-    lng: midLng + offsetLng,
-  }
-
-  for (let i = 0; i <= segments; i++) {
-    const t = i / segments
-    const lat =
-      (1 - t) * (1 - t) * from.lat +
-      2 * (1 - t) * t * control.lat +
-      t * t * to.lat
-    const lng =
-      (1 - t) * (1 - t) * from.lng +
-      2 * (1 - t) * t * control.lng +
-      t * t * to.lng
-    latlngs.push([lat, lng])
-  }
-
-  return latlngs
-}
 
 export default function WaypointManager({
   waypoints,
@@ -51,14 +24,8 @@ export default function WaypointManager({
   setShowTargetModal,
   onTargetClick,
   segmentSpeeds,
-  setIsMobileCollapsed,
-  setExpandedSegmentId,
-  isMobile,
-  isDesktop,
-  setIsDesktopCollapsed,
   onClick,
   onSelectSegment,
-  dronePosition,
 }) {
   useMapEvents({
     click: async (e) => {
@@ -153,7 +120,10 @@ export default function WaypointManager({
         const tightness = speedData.curveTightness ?? 15
         const latlngs = isCurved
           ? getBezierCurvePoints(wp, next, tightness)
-          : [[wp.lat, wp.lng], [next.lat, next.lng]]
+          : [
+              [wp.lat, wp.lng],
+              [next.lat, next.lng],
+            ]
 
         return (
           <>
@@ -177,15 +147,16 @@ export default function WaypointManager({
                 const tightness = speedData.curveTightness ?? 15
                 return isCurved
                   ? getBezierCurvePoints(wp, next, tightness)
-                  : [[wp.lat, wp.lng], [next.lat, next.lng]]
+                  : [
+                      [wp.lat, wp.lng],
+                      [next.lat, next.lng],
+                    ]
               })}
-              
               segmentSpeeds={segmentSpeeds}
               onSelectSegment={onSelectSegment}
               unitSystem={unitSystem}
               waypoints={waypoints}
             />
-
           </>
         )
       })}
@@ -225,34 +196,20 @@ export default function WaypointManager({
           onDragEnd={(id, newLat, newLng) => {
             setTargets((prev) => {
               return prev.map((target) =>
-                target.id === id
-                  ? { ...target, lat: newLat, lng: newLng }
-                  : target
+                target.id === id ? { ...target, lat: newLat, lng: newLng } : target,
               )
             })
 
             setWaypoints((prevWaypoints) =>
               recalculateHeadings(
                 prevWaypoints,
-                targets.map((t) =>
-                  t.id === id ? { ...t, lat: newLat, lng: newLng } : t
-                )
-              )
+                targets.map((t) => (t.id === id ? { ...t, lat: newLat, lng: newLng } : t)),
+              ),
             )
           }}
           onTargetClick={onTargetClick}
         />
       ))}
-
-      {dronePosition && (
-        <Marker
-          position={dronePosition}
-          icon={L.divIcon({
-            className: 'drone-icon',
-            html: '<div style="width:12px;height:12px;background:#00bcd4;border-radius:50%"></div>',
-          })}
-        />
-      )}
     </>
   )
 }

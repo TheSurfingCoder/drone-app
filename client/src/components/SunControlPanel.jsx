@@ -1,42 +1,40 @@
-import { useState } from 'react';
-import { DateTime } from 'luxon';
-import React from 'react';
+import { useState } from 'react'
+import { DateTime } from 'luxon'
+import React from 'react'
 
 export default function SunControlPanel({ onDateTimeChange }) {
-  const [date, setDate] = useState("2023-07-01");
-  const [time, setTime] = useState("12:00");
-  const [timezone, setTimezone] = useState("UTC");
+  const [date, setDate] = useState('2023-07-01')
+  const [time, setTime] = useState('12:00')
+  const [timezone, setTimezone] = useState('UTC')
 
   const handleChange = (d, t, tz) => {
-    const [hour, minute] = t.split(":").map(Number);
-    const dt = DateTime.fromISO(`${d}T${t}`, { zone: tz });
+    const dt = DateTime.fromISO(`${d}T${t}`, { zone: tz })
 
     if (dt.isValid) {
-      const utcDate = dt.toUTC().toJSDate();
-      console.log("🕒 Luxon UTC DateTime:", dt.toUTC().toISO());
-      console.log("🕒 UTC JS Date passed to Cesium:", utcDate.toISOString());
-      onDateTimeChange(utcDate);
-
+      const utcDate = dt.toUTC().toJSDate()
+      console.log('🕒 Luxon UTC DateTime:', dt.toUTC().toISO())
+      console.log('🕒 UTC JS Date passed to Cesium:', utcDate.toISOString())
+      onDateTimeChange(utcDate)
     }
-  };
+  }
 
   const handleDateChange = (e) => {
-    const newDate = e.target.value;
-    setDate(newDate);
-    handleChange(newDate, time, timezone);
-  };
+    const newDate = e.target.value
+    setDate(newDate)
+    handleChange(newDate, time, timezone)
+  }
 
   const handleTimeChange = (e) => {
-    const newTime = e.target.value;
-    setTime(newTime);
-    handleChange(date, newTime, timezone);
-  };
+    const newTime = e.target.value
+    setTime(newTime)
+    handleChange(date, newTime, timezone)
+  }
 
   const handleTimezoneChange = (e) => {
-    const newTZ = e.target.value;
-    setTimezone(newTZ);
-    handleChange(date, time, newTZ);
-  };
+    const newTZ = e.target.value
+    setTimezone(newTZ)
+    handleChange(date, time, newTZ)
+  }
 
   return (
     <div className="bg-white px-3 py-2 rounded shadow text-xs">
@@ -53,5 +51,5 @@ export default function SunControlPanel({ onDateTimeChange }) {
         </select>
       </div>
     </div>
-  );
+  )
 }

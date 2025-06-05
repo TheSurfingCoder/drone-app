@@ -4,9 +4,7 @@ import React from 'react'
 export default function ModernStatusPill({ waypoints, unitSystem, segmentSpeeds }) {
   const distanceKm = calculateDistance(waypoints)
   const distance =
-    unitSystem === 'imperial'
-      ? (distanceKm * 0.621371).toFixed(2)
-      : distanceKm.toFixed(2)
+    unitSystem === 'imperial' ? (distanceKm * 0.621371).toFixed(2) : distanceKm.toFixed(2)
 
   const distanceLabel = unitSystem === 'imperial' ? 'mi' : 'km'
   const durationMin = (estimateDuration(waypoints, segmentSpeeds) / 60).toFixed(1)

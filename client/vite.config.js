@@ -1,10 +1,10 @@
-import { defineConfig } from "vite";
-import { viteStaticCopy } from "vite-plugin-static-copy";
+import { defineConfig } from 'vite'
+import { viteStaticCopy } from 'vite-plugin-static-copy'
 
-const cesiumSource = "node_modules/cesium/Build/Cesium";
+const cesiumSource = 'node_modules/cesium/Build/Cesium'
 // This is the base url for static files that CesiumJS needs to load.
 // Set to an empty string to place the files at the site's root path
-const cesiumBaseUrl = "cesiumStatic";
+const cesiumBaseUrl = 'cesiumStatic'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -26,4 +26,4 @@ export default defineConfig({
       ],
     }),
   ],
-});
+})

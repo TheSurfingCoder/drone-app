@@ -1,4 +1,4 @@
-import React from "react"
+import React from 'react'
 
 export default function SpeedConnector({
   speed,
@@ -39,10 +39,7 @@ export default function SpeedConnector({
           />
 
           {/* ✅ Restore Apply to All */}
-          <button
-            onClick={() => onApplyToAll?.(speed)}
-            className="text-xs text-blue-600 underline"
-          >
+          <button onClick={() => onApplyToAll?.(speed)} className="text-xs text-blue-600 underline">
             Apply to All
           </button>
 

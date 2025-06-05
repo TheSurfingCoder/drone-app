@@ -1,8 +1,8 @@
-import React from 'react';
-import { Entity } from 'resium';
-import { Color, Cartesian2 } from 'cesium';
+import React from 'react'
+import { Entity } from 'resium'
+import { Color, Cartesian2 } from 'cesium'
 
-export default function TargetEntity({ targets, sceneMode }) {
+export default function TargetEntity({ targets }) {
   return (
     <>
       {targets.map((target, i) => (
@@ -22,5 +22,5 @@ export default function TargetEntity({ targets, sceneMode }) {
         />
       ))}
     </>
-  );
+  )
 }

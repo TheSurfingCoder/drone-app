@@ -6,15 +6,14 @@
 
 /* Force Cesium viewer canvas behind all UI */
 
-
-
-body, html, #root {
+body,
+html,
+#root {
   height: 100%;
   margin: 0;
   padding: 0;
   overflow: hidden;
 }
-
 
 .fullscreen-map {
   height: calc(100vh - 3.5rem); /* match Tailwind top bar */
@@ -31,12 +30,3 @@ body, html, #root {
   cursor: pointer;
   user-select: none;
 }
-
-
-
-
-
-
-
-
-

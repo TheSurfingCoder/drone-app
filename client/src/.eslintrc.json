@@ -1,11 +1,22 @@
 {
   "root": true,
-  "extends": ["cesium/browser"],
-  "plugins": ["html", "es"],
+  "extends": ["cesium/browser", "plugin:react/recommended", "prettier"],
+  "plugins": ["html", "es", "react", "react-hooks"],
   "parserOptions": {
-    "ecmaVersion": 2023
+    "ecmaVersion": 2023,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
   },
   "rules": {
-    "no-unused-vars": ["error", { "vars": "all", "args": "none" }]
+    "no-unused-vars": ["error", { "vars": "all", "args": "none" }],
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn"
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
   }
 }

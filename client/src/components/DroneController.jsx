@@ -1,44 +1,63 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { moveToward } from '../utils/droneMovement'
-import { generateCurvePoints } from '../utils/geometry'
-import { getBezierCurvePoints } from '../utils/geometry'
+import { generateCurvePoints, getBezierCurvePoints } from '../utils/geometry'
+import { calculateHeadingFromTo } from '../utils/interpolationHeading'
+import L from 'leaflet'
 
 export default function DroneController({
   waypoints,
   segmentSpeeds,
   setDronePosition,
-  dronePosition,
-  logs,
   setLogs,
   handleClearWaypoints,
   showCountdown,
   setShowCountdown,
   setCountdownMessage,
-  mapRef
+  mapRef,
+  droneHeadingRef,
+  setDroneHeading,
+  droneHeading,
 }) {
   const [clicked, setClicked] = useState(false)
+
+  // Used to cancel animation loop
   const animationRef = useRef()
+  // Timestamp of last animation frame
   const lastTimeRef = useRef(null)
+  // Full lat/lng path to simulate drone movement
   const currentPathRef = useRef([])
+  // Index of current path step
   const currentPathIndexRef = useRef(0)
+  // Current lat/lng position of drone
   const currentPositionRef = useRef(null)
-  const [droneHeading, setDroneHeading] = useState(null)
-const [dronePitch, setDronePitch] = useState(null)
+  // Heading interpolation state per segment
+  const headingStateRef = useRef({ segmentId: null, start: 0, end: 0 })
 
+  function normalizeHeading(deg) {
+    return ((deg % 360) + 360) % 360
+  }
 
+  function lerpAngleShortest(start, end, t) {
+    start = normalizeHeading(start)
+    end = normalizeHeading(end)
+    let delta = end - start
+    if (delta > 180) delta -= 360
+    if (delta < -180) delta += 360
+    return normalizeHeading(start + delta * t)
+  }
+
+  function distance2D(a, b) {
+    return Math.sqrt(Math.pow(a.lat - b.lat, 2) + Math.pow(a.lng - b.lng, 2))
+  }
 
   const handleStartMission = () => {
     setClicked(true)
     setTimeout(() => setClicked(false), 150)
-
     if (!waypoints || waypoints.length === 0) {
-      setCountdownMessage(
-        'There are no waypoints. Please click on the map to set some.'
-      )
+      setCountdownMessage('There are no waypoints. Please click on the map to set some.')
       setShowCountdown(true)
       return
     }
-
     setCountdownMessage('Starting in')
     setShowCountdown(true)
   }
@@ -47,11 +66,7 @@ const [dronePitch, setDronePitch] = useState(null)
     if (showCountdown) return
     if (!waypoints || waypoints.length < 2) return
 
-    // Build the full path
-    const fullPath = []
-
-    console.log("Map ref at time of sim init:", mapRef?.current)
-
+    const fullPath = [] // Holds all drone lat/lng steps
 
     for (let i = 0; i < waypoints.length - 1; i++) {
       const from = waypoints[i]
@@ -59,48 +74,44 @@ const [dronePitch, setDronePitch] = useState(null)
       const seg = segmentSpeeds?.[i]
       const bezierPoints = getBezierCurvePoints(from, to, seg.curveTightness ?? 15, 20)
 
-      
-
       if (seg?.isCurved) {
         const curvePoints = generateCurvePoints(from, to, seg.curveTightness ?? 15, mapRef.current)
-        console.log("🌀 Curve point count:", curvePoints.length)
-        fullPath.push(...bezierPoints)
-
+        fullPath.push(...bezierPoints) // curved segment path
+      } else if (i === 0) {
+        fullPath.push({ lat: from.lat, lng: from.lng })
       }
-      else if (i === 0) {
-        fullPath.push({ lat: from.lat, lng: from.lng }) // Add only once at the beginning
-      }
-      fullPath.push({ lat: to.lat, lng: to.lng })       // Add the `to` for each segment
-      
-     
-
+      fullPath.push({ lat: to.lat, lng: to.lng }) // straight segment step
     }
 
-    // Push last waypoint explicitly
-    fullPath.push({ lat: waypoints[waypoints.length - 1].lat, lng: waypoints[waypoints.length - 1].lng })
+    // Add final point to ensure completion
+    fullPath.push({
+      lat: waypoints[waypoints.length - 1].lat,
+      lng: waypoints[waypoints.length - 1].lng,
+    })
 
+    // Initialize simulation state
     currentPathRef.current = fullPath
     currentPathIndexRef.current = 0
     currentPositionRef.current = fullPath[0]
     setDronePosition(fullPath[0])
     lastTimeRef.current = null
-    console.log("🚁 Built fullPath:", fullPath)
-    console.log("👣 Path point count:", fullPath.length)
 
+    // Set initial heading
+    const fromWp = waypoints[0]
+    const fallbackInitialHeading = calculateHeadingFromTo(waypoints[0], waypoints[1])
+    const initialHeading = normalizeHeading(fromWp?.heading ?? fallbackInitialHeading)
+    droneHeadingRef.current = initialHeading
+    setDroneHeading(initialHeading)
 
+    // Begin animation loop
     const step = (timestamp) => {
       const idx = currentPathIndexRef.current
       if (idx >= currentPathRef.current.length - 1) {
-        const now = new Date().toLocaleTimeString()
-        setLogs((prev) => [...prev, `[${now}] 🏁 Mission complete`])
         cancelAnimationFrame(animationRef.current)
         return
       }
-      console.log(`🛰️ Moving to index ${currentPathIndexRef.current + 1} of ${fullPath.length}`);
-      
-      const to = currentPathRef.current[idx + 1]
-     
 
+      const to = currentPathRef.current[idx + 1]
       const segmentIdx = Math.min(waypoints.length - 2, idx)
       const speed = segmentSpeeds?.[segmentIdx]?.speed ?? 10
 
@@ -120,30 +131,51 @@ const [dronePitch, setDronePitch] = useState(null)
         deltaTime,
       })
 
+      const segment = segmentSpeeds?.[segmentIdx]
+      const fromWp = waypoints.find((wp) => wp.id === segment?.fromId)
+      const toWp = waypoints.find((wp) => wp.id === segment?.toId)
+
+      // Setup heading interpolation for this segment
+      if (headingStateRef.current.segmentId !== segmentIdx) {
+        const fallbackStart = calculateHeadingFromTo(fromWp, toWp)
+        const fallbackEnd = calculateHeadingFromTo(fromWp, toWp)
+        headingStateRef.current = {
+          segmentId: segmentIdx,
+          start: normalizeHeading(fromWp?.heading ?? fallbackStart),
+          end: normalizeHeading(toWp?.heading ?? fallbackEnd),
+        }
+      }
+
+      const totalDist = distance2D(fromWp, toWp)
+      const distSoFar = distance2D(fromWp, currentPositionRef.current)
+      const progress = Math.max(0, Math.min(1, distSoFar / totalDist))
+
+      const { start, end } = headingStateRef.current
+      const interpolatedHeading = segment?.interpolateHeading
+        ? lerpAngleShortest(start, end, progress)
+        : start
+
+      // Update drone position and heading
+      droneHeadingRef.current = interpolatedHeading
+      setDroneHeading(interpolatedHeading)
       currentPositionRef.current = nextPos
       setDronePosition(nextPos)
 
-      const dist = Math.sqrt(
-        Math.pow(to.lat - nextPos.lat, 2) + Math.pow(to.lng - nextPos.lng, 2)
-      )
-      
+      const dist = Math.sqrt(Math.pow(to.lat - nextPos.lat, 2) + Math.pow(to.lng - nextPos.lng, 2))
 
+      // Advance to next point if close enough
       if (dist < 0.00001) {
         const now = new Date().toLocaleTimeString()
         currentPathIndexRef.current += 1
+        headingStateRef.current.segmentId = null
+        droneHeadingRef.current = headingStateRef.current.end
+        setDroneHeading(headingStateRef.current.end)
         setLogs((prev) => [...prev, `[${now}] ✅ Passed point ${idx + 1}`])
-        console.log("📏 Distance to next point:", dist)
-
       }
 
       if (isNaN(dist)) {
-        console.error("❌ Distance calculation returned NaN", { to, nextPos })
+        console.error('❌ Distance calculation returned NaN', { to, nextPos })
       }
-      
-
-      console.log("🚶 Current:", currentPositionRef.current)
-      console.log("🎯 Target:", to)
-      console.log("📏 Dist:", dist)
 
       animationRef.current = requestAnimationFrame(step)
     }

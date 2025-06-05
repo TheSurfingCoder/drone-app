@@ -4,7 +4,13 @@ import L from 'leaflet'
 import 'leaflet-polylinedecorator'
 import 'leaflet-geometryutil'
 
-export default function PolylineDecorator({ segmentLatLngs, segmentSpeeds, onSelectSegment, unitSystem, waypoints }) {
+export default function PolylineDecorator({
+  segmentLatLngs,
+  segmentSpeeds,
+  onSelectSegment,
+  unitSystem,
+  waypoints,
+}) {
   const map = useMap()
 
   useEffect(() => {
@@ -15,12 +21,9 @@ export default function PolylineDecorator({ segmentLatLngs, segmentSpeeds, onSel
     segmentLatLngs.forEach((latlngs, i) => {
       if (!latlngs || latlngs.length < 2) return
 
-      const from = latlngs[0]
-      const to = latlngs[latlngs.length - 1]
       const speed = segmentSpeeds?.[i]?.speed ?? 10
-      const displaySpeed = unitSystem === 'metric'
-        ? `${speed.toFixed(1)} m/s`
-        : `${(speed * 2.23694).toFixed(1)} mph`
+      const displaySpeed =
+        unitSystem === 'metric' ? `${speed.toFixed(1)} m/s` : `${(speed * 2.23694).toFixed(1)} mph`
 
       const segment = L.polyline(latlngs, {
         color: 'transparent',
@@ -40,7 +43,6 @@ export default function PolylineDecorator({ segmentLatLngs, segmentSpeeds, onSel
         }
       })
 
-      // 🧠 New midpoint logic
       let midpoint
       if (latlngs.length === 2 && L.GeometryUtil) {
         const interpolated = L.GeometryUtil.interpolateOnLine(map, latlngs, 0.5)

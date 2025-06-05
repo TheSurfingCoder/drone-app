@@ -1,12 +1,5 @@
 import React, { useState } from 'react'
-import {
-  LayersIcon,
-  DownloadIcon,
-  UploadIcon,
-  MapPinIcon,
-  TargetIcon,
-} from 'lucide-react'
-import SidePanel from './SidePanel'
+import { DownloadIcon, UploadIcon, MapPinIcon, TargetIcon } from 'lucide-react'
 
 export default function QuickAccessToolbar({ isMobile, isCompactMode, onModeChange, currentMode }) {
   const isTargetMode = currentMode === 'target'
@@ -58,5 +51,4 @@ export default function QuickAccessToolbar({ isMobile, isCompactMode, onModeChan
       <ToolbarButton icon={DownloadIcon} label="Save & Export" onClick={handleFileExport} />
     </div>
   )
-  
 }

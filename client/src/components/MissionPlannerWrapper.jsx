@@ -1,73 +1,72 @@
-import { useState, useRef, useEffect } from 'react';
-import MapComponent from './Map';
-import CesiumMap from './CesiumMap';
-import UnitToggle from './UnitToggle';
-import DroneController from './DroneController';
-import LogPanel from './LogPanel';
-import WaypointList from './WaypointList';
-import CurrentLocationButton from './CurrentLocationButton';
-import { Cartesian3 } from '@cesium/engine';
-import React from 'react';
-import BottomSheet from './BottomSheet';
-import QuickAccessToolbar from './QuickAccessToolbar';
-import ModernStatusPill from './ModernStatusPill';
+import { useState, useRef, useEffect } from 'react'
+import MapComponent from './Map'
+import CesiumMap from './CesiumMap'
+import UnitToggle from './UnitToggle'
+import DroneController from './DroneController'
+import WaypointList from './WaypointList'
+import CurrentLocationButton from './CurrentLocationButton'
+import { Cartesian3 } from '@cesium/engine'
+import React from 'react'
+import BottomSheet from './BottomSheet'
+import QuickAccessToolbar from './QuickAccessToolbar'
+import ModernStatusPill from './ModernStatusPill'
 import { calculateHeading } from '../utils/headingUtils' // we'll create this next
-import TargetWaypointModal from './TargetWayPointModal';
-import { recalculateHeadings } from '../utils/recalculateHeadings';
-import CountdownModal from './CountdownModal';
-import AltitudeSlider from './AltitudeSlider';
+import TargetWaypointModal from './TargetWayPointModal'
+import { recalculateHeadings } from '../utils/recalculateHeadings'
+import CountdownModal from './CountdownModal'
+import AltitudeSlider from './AltitudeSlider'
 import MobileWaypointPanel from './MobileWaypointPanel'
 import DesktopWaypointPanel from './DesktopWaypointPanel'
 
-
 export default function MissionPlannerWrapper() {
-  const [viewMode, setViewMode] = useState('2d');
-  const [waypoints, setWaypoints] = useState([]);
-  const [unitSystem, setUnitSystem] = useState('metric');
-  const [dronePosition, setDronePosition] = useState(null); // SF default
-  const [logs, setLogs] = useState([]);
-  const mapRef = useRef(null);
-  const viewerRef = useRef(null);
+  const [viewMode, setViewMode] = useState('2d')
+  const [waypoints, setWaypoints] = useState([])
+  const [unitSystem, setUnitSystem] = useState('metric')
+  const [dronePosition, setDronePosition] = useState(null) // SF default
+  const [logs, setLogs] = useState([])
+  const mapRef = useRef(null)
+  const viewerRef = useRef(null)
   const [mapMode, setMapMode] = useState('waypoint')
   const [targets, setTargets] = useState([])
   const [showTargetModal, setShowTargetModal] = useState(false)
   const [targetPendingFocus, setTargetPendingFocus] = useState(null)
   const [selectedTargetId, setSelectedTargetId] = useState(null)
   const [showCountdown, setShowCountdown] = useState(false)
-  const [countdownMessage, setCountdownMessage] = useState("Starting in")
+  const [countdownMessage, setCountdownMessage] = useState('Starting in')
   const [segmentSpeeds, setSegmentSpeeds] = useState([])
-  const isMobile = useIsMobile();
-  const [selectedWaypoint, setSelectedWaypoint] = useState(null);
+  const isMobile = useIsMobile()
+  const [selectedWaypoint, setSelectedWaypoint] = useState(null)
   const [isMobileCollapsed, setIsMobileCollapsed] = useState(true)
   const [expandedSegmentId, setExpandedSegmentId] = useState(null)
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(true)
-  const hasAutoOpenedDesktopPanel = useRef(false); // tracks if we've already opened it
+  const hasAutoOpenedDesktopPanel = useRef(false) // tracks if we've already opened it
 
-  const isDesktop = !isMobile;
+  const isDesktop = !isMobile
   const defaultSpeed = 10
-const defaultTightness = 15
+  const defaultTightness = 15
 
+  const [droneHeading, setDroneHeading] = useState(0)
+  const droneHeadingRef = useRef(0)
 
   useEffect(() => {
-    console.log("🧭 Updated waypoints:", waypoints);
-  }, [waypoints]);
-  
+    console.log('🧭 Updated waypoints:', waypoints)
+  }, [waypoints])
 
   useEffect(() => {
     if (waypoints.length >= 2) {
       setSegmentSpeeds((prev) => {
         const needed = waypoints.length - 1
-  
+
         // If segment count is already correct, update only fromId/toId
         if (prev.length === needed) {
           return prev.map((seg, i) => ({
             ...seg,
             fromId: waypoints[i].id,
             toId: waypoints[i + 1].id,
-            curveTightness: seg.curveTightness ?? 15  // ← ensure it's present
+            curveTightness: seg.curveTightness ?? 15, // ← ensure it's present
           }))
         }
-  
+
         // If too few segments, add new ones
         if (prev.length < needed) {
           const newSegments = []
@@ -78,12 +77,12 @@ const defaultTightness = 15
               speed: 10,
               interpolateHeading: true,
               isCurved: false,
-              curveTightness: 15  // ← default value
+              curveTightness: 15, // ← default value
             })
           }
           return [...prev, ...newSegments]
         }
-  
+
         // If too many segments (waypoints were deleted), truncate
         return prev.slice(0, needed)
       })
@@ -91,76 +90,62 @@ const defaultTightness = 15
       setSegmentSpeeds([])
     }
   }, [waypoints])
-  
-
 
   useEffect(() => {
     if (
-      waypoints.length === 1 &&     // just added first
-      isDesktop &&                  // desktop only
-      isDesktopCollapsed &&         // currently collapsed
+      waypoints.length === 1 && // just added first
+      isDesktop && // desktop only
+      isDesktopCollapsed && // currently collapsed
       !hasAutoOpenedDesktopPanel.current // hasn’t auto-opened yet
     ) {
-      setIsDesktopCollapsed(false);           // open the panel
-      hasAutoOpenedDesktopPanel.current = true; // mark it as opened
+      setIsDesktopCollapsed(false) // open the panel
+      hasAutoOpenedDesktopPanel.current = true // mark it as opened
     }
-  }, [waypoints, isDesktop, isDesktopCollapsed]);
-  
-
+  }, [waypoints, isDesktop, isDesktopCollapsed])
 
   const handleCurveTightnessChange = (fromId, toId, newTightness) => {
     setSegmentSpeeds((prev) =>
       prev.map((seg) =>
-        seg.fromId === fromId && seg.toId === toId
-          ? { ...seg, curveTightness: newTightness }
-          : seg
-      )
+        seg.fromId === fromId && seg.toId === toId ? { ...seg, curveTightness: newTightness } : seg,
+      ),
     )
   }
-  
-
 
   const selectedTarget = targets.find((t) => t.id === selectedTargetId)
   const targetIndex = targets.findIndex((t) => t.id === selectedTargetId)
 
   function useIsMobile() {
-    const [isMobile, setIsMobile] = useState(
-      window.innerWidth <= 768 || window.innerHeight <= 500
-    );
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768 || window.innerHeight <= 500)
 
     useEffect(() => {
       const handleResize = () => {
-        setIsMobile(window.innerWidth <= 768 || window.innerHeight <= 500);
-      };
+        setIsMobile(window.innerWidth <= 768 || window.innerHeight <= 500)
+      }
 
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
-    }, []);
+      window.addEventListener('resize', handleResize)
+      return () => window.removeEventListener('resize', handleResize)
+    }, [])
 
-    return isMobile;
+    return isMobile
   }
 
-  
-
   const handleSegmentSpeedChange = (fromId, toId, newSpeed) => {
-    const fromIndex = waypoints.findIndex(wp => wp.id === fromId)
-    const toIndex = waypoints.findIndex(wp => wp.id === toId)
+    const fromIndex = waypoints.findIndex((wp) => wp.id === fromId)
+    const toIndex = waypoints.findIndex((wp) => wp.id === toId)
     const index = Math.min(fromIndex, toIndex)
-  
+
     if (index < 0 || index >= segmentSpeeds.length) {
-      console.warn("Invalid segment index:", index)
+      console.warn('Invalid segment index:', index)
       return
     }
-  
+
     const newSpeeds = [...segmentSpeeds]
     newSpeeds[index] = {
-      ...newSpeeds[index],      // keep existing data (interpolateHeading, etc)
-      speed: newSpeed           // only update speed
+      ...newSpeeds[index], // keep existing data (interpolateHeading, etc)
+      speed: newSpeed, // only update speed
     }
     setSegmentSpeeds(newSpeeds)
   }
-  
-
 
   const handleApplySpeedToAll = (newSpeed) => {
     const updated = segmentSpeeds.map((seg) => ({
@@ -168,116 +153,99 @@ const defaultTightness = 15
       speed: newSpeed,
     }))
     setSegmentSpeeds(updated)
-    console.log("🚀 Applied speed to all segments:", updated)
+    console.log('🚀 Applied speed to all segments:', updated)
   }
-  
-
-
 
   const handleSelectWaypoint = (id) => {
-    if (isMobile) setIsMobileCollapsed(false);
-    if (isDesktop) setIsDesktopCollapsed(false);
-  
-    setExpandedSegmentId(null);
-    setSelectedWaypoint(id);
-  
-    const wp = waypoints.find((w) => w.id === id);
+    if (isMobile) setIsMobileCollapsed(false)
+    if (isDesktop) setIsDesktopCollapsed(false)
+
+    setExpandedSegmentId(null)
+    setSelectedWaypoint(id)
+
+    const wp = waypoints.find((w) => w.id === id)
     if (wp && mapRef.current) {
-      const map = mapRef.current;
-      const currentZoom = map.getZoom();
-      const targetZoom = currentZoom < 19 ? 19 : currentZoom;
-  
-      const point = map.project([wp.lat, wp.lng], targetZoom);
-      const offsetY = 100;
-      const newPoint = L.point(point.x, point.y + offsetY);
-      const targetLatLng = map.unproject(newPoint, targetZoom);
-  
-      map.setView(targetLatLng, targetZoom);
+      const map = mapRef.current
+      const currentZoom = map.getZoom()
+      const targetZoom = currentZoom < 19 ? 19 : currentZoom
+
+      const point = map.project([wp.lat, wp.lng], targetZoom)
+      const offsetY = 100
+      const newPoint = L.point(point.x, point.y + offsetY)
+      const targetLatLng = map.unproject(newPoint, targetZoom)
+
+      map.setView(targetLatLng, targetZoom)
     }
-  };
-  
-  
-  
+  }
 
   const handleSelectSegment = (fromId, toId) => {
-    setExpandedSegmentId(`${fromId}-${toId}`);
-    setSelectedWaypoint(null); // Clear any waypoint selection
-  
-    if (isMobile) setIsMobileCollapsed(false);
-    if (isDesktop) setIsDesktopCollapsed(false);
-  
-    const from = waypoints.find((wp) => wp.id === fromId);
-    const to = waypoints.find((wp) => wp.id === toId);
-    const map = mapRef.current;
-  
-    if (from && to && map) {
-      const midLat = (from.lat + to.lat) / 2;
-      const midLng = (from.lng + to.lng) / 2;
-      const zoom = map.getZoom();
-      const adjustedZoom = zoom > 19 ? zoom : 19;
-  
-      const midpoint = L.latLng(midLat, midLng);
-      const point = map.project(midpoint, adjustedZoom);
-  
-      // Offset for desktop/mobile
-      const offsetX = isDesktop ? 150 : 0; // shift left on desktop
-      const offsetY = isMobile ? 100 : 0;  // shift up on mobile
-      const adjustedPoint = L.point(point.x + offsetX, point.y + offsetY);
-  
-      const newLatLng = map.unproject(adjustedPoint, adjustedZoom);
-      map.setView(newLatLng, adjustedZoom);
-    }
-  };
-  
-  
-  
+    setExpandedSegmentId(`${fromId}-${toId}`)
+    setSelectedWaypoint(null) // Clear any waypoint selection
 
+    if (isMobile) setIsMobileCollapsed(false)
+    if (isDesktop) setIsDesktopCollapsed(false)
+
+    const from = waypoints.find((wp) => wp.id === fromId)
+    const to = waypoints.find((wp) => wp.id === toId)
+    const map = mapRef.current
+
+    if (from && to && map) {
+      const midLat = (from.lat + to.lat) / 2
+      const midLng = (from.lng + to.lng) / 2
+      const zoom = map.getZoom()
+      const adjustedZoom = zoom > 19 ? zoom : 19
+
+      const midpoint = L.latLng(midLat, midLng)
+      const point = map.project(midpoint, adjustedZoom)
+
+      // Offset for desktop/mobile
+      const offsetX = isDesktop ? 150 : 0 // shift left on desktop
+      const offsetY = isMobile ? 100 : 0 // shift up on mobile
+      const adjustedPoint = L.point(point.x + offsetX, point.y + offsetY)
+
+      const newLatLng = map.unproject(adjustedPoint, adjustedZoom)
+      map.setView(newLatLng, adjustedZoom)
+    }
+  }
 
   const handleUpdateWaypoint = (id, updates) => {
-    setWaypoints((prev) =>
-      prev.map((wp) => (wp.id === id ? { ...wp, ...updates } : wp))
-    );
-  };
+    setWaypoints((prev) => prev.map((wp) => (wp.id === id ? { ...wp, ...updates } : wp)))
+  }
 
   const handleDeleteWaypoint = (id) => {
-    setWaypoints((prev) => prev.filter((wp) => wp.id !== id));
-    if (selectedWaypoint === id) setSelectedWaypoint(null);
-  };
-
+    setWaypoints((prev) => prev.filter((wp) => wp.id !== id))
+    if (selectedWaypoint === id) setSelectedWaypoint(null)
+  }
 
   const handleLocateMe = (lat, lng) => {
-    console.log(`📍 Handling locate for ${viewMode.toUpperCase()}:`, lat, lng);
+    console.log(`📍 Handling locate for ${viewMode.toUpperCase()}:`, lat, lng)
     console.log(mapRef.current)
     if (viewMode === '2d') {
-      const map = mapRef.current;
-      map.setView([lat, lng], 15);
+      const map = mapRef.current
+      map.setView([lat, lng], 15)
       map.invalidateSize()
     }
 
     if (viewMode === '3d') {
-      const viewer = viewerRef.current?.cesiumElement;
+      const viewer = viewerRef.current?.cesiumElement
       if (viewer) {
         viewer.camera.flyTo({
           destination: Cartesian3.fromDegrees(lng, lat, 1500),
-        });
+        })
       } else {
-        console.warn("3D viewer not ready.");
+        console.warn('3D viewer not ready.')
       }
     }
-  };
-
+  }
 
   const clearWaypoints = () => {
-    setWaypoints([]);
+    setWaypoints([])
     setTargets([])
-  };
+  }
 
   const clearLogs = () => {
-    setLogs([]);
-  };
-
-
-
+    setLogs([])
+  }
 
   return (
     <div className="flex flex-col relative w-screen h-screen">
@@ -302,6 +270,9 @@ const defaultTightness = 15
             segmentSpeeds={segmentSpeeds}
             unitSystem={unitSystem}
             mapRef={mapRef}
+            droneHeadingRef={droneHeadingRef}
+            setDroneHeading={setDroneHeading}
+            droneHeading={droneHeading}
           />
         </div>
         <div>
@@ -313,7 +284,11 @@ const defaultTightness = 15
           </button>
         </div>
         <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-[49]">
-          <ModernStatusPill waypoints={waypoints} unitSystem={unitSystem} segmentSpeeds={segmentSpeeds} />
+          <ModernStatusPill
+            waypoints={waypoints}
+            unitSystem={unitSystem}
+            segmentSpeeds={segmentSpeeds}
+          />
         </div>
       </div>
 
@@ -336,7 +311,6 @@ const defaultTightness = 15
             segmentSpeeds={segmentSpeeds}
             onTargetClick={(targetId) => {
               setSelectedTargetId(targetId)
-
             }}
             expandedSegmentId={expandedSegmentId}
             setExpandedSegmentId={setExpandedSegmentId}
@@ -344,8 +318,10 @@ const defaultTightness = 15
             setIsDesktopCollapsed={setIsDesktopCollapsed}
             isMobile={isMobile}
             isDesktop={isDesktop}
-            onClick={handleSelectWaypoint}  
-            onSelectSegment={handleSelectSegment}        />
+            onClick={handleSelectWaypoint}
+            onSelectSegment={handleSelectSegment}
+            droneHeading={droneHeading}
+          />
         ) : (
           <CesiumMap
             waypoints={waypoints}
@@ -361,40 +337,38 @@ const defaultTightness = 15
           />
         )}
 
-{isDesktop && (
-  
-        <DesktopWaypointPanel
-          waypoints={waypoints}
-          selectedWaypoint={selectedWaypoint}
-          onSelectWaypoint={handleSelectWaypoint}
-          onUpdateWaypoint={handleUpdateWaypoint}
-          onDeleteWaypoint={handleDeleteWaypoint}
-          segmentSpeeds={segmentSpeeds}
-          expandedSegmentId={expandedSegmentId}
-          setExpandedSegmentId={setExpandedSegmentId}
-          handleSegmentSpeedChange={handleSegmentSpeedChange}
-          handleApplySpeedToAll={handleApplySpeedToAll}
-          setSelectedTargetId={setSelectedTargetId}
-          setShowTargetModal={setShowTargetModal}
-          onModeChange={setMapMode}
-          unitSystem={unitSystem}
-          isDesktopCollapsed={isDesktopCollapsed}
-          setIsDesktopCollapsed={setIsDesktopCollapsed}
-          onSelectSegment={handleSelectSegment}
-          setSegmentSpeeds={setSegmentSpeeds}
-          handleCurveTightnessChange={handleCurveTightnessChange}
-        />
-          
-      )}
+        {isDesktop && (
+          <DesktopWaypointPanel
+            waypoints={waypoints}
+            selectedWaypoint={selectedWaypoint}
+            onSelectWaypoint={handleSelectWaypoint}
+            onUpdateWaypoint={handleUpdateWaypoint}
+            onDeleteWaypoint={handleDeleteWaypoint}
+            segmentSpeeds={segmentSpeeds}
+            expandedSegmentId={expandedSegmentId}
+            setExpandedSegmentId={setExpandedSegmentId}
+            handleSegmentSpeedChange={handleSegmentSpeedChange}
+            handleApplySpeedToAll={handleApplySpeedToAll}
+            setSelectedTargetId={setSelectedTargetId}
+            setShowTargetModal={setShowTargetModal}
+            onModeChange={setMapMode}
+            unitSystem={unitSystem}
+            isDesktopCollapsed={isDesktopCollapsed}
+            setIsDesktopCollapsed={setIsDesktopCollapsed}
+            onSelectSegment={handleSelectSegment}
+            setSegmentSpeeds={setSegmentSpeeds}
+            handleCurveTightnessChange={handleCurveTightnessChange}
+          />
+        )}
       </div>
 
       {/* ✅ Modal rendered globally, not inside map logic */}
       {showCountdown && (
         <CountdownModal
           message={countdownMessage}
-          seconds={countdownMessage === "Starting in" ? 3 : 2}
+          seconds={countdownMessage === 'Starting in' ? 3 : 2}
           onComplete={() => {
-            if (countdownMessage === "Starting in") {
+            if (countdownMessage === 'Starting in') {
               setDronePosition([waypoints[0].lat, waypoints[0].lng])
               // mission simulation logic
             }
@@ -403,20 +377,17 @@ const defaultTightness = 15
         />
       )}
 
-
       {showTargetModal && targetPendingFocus && (
         <TargetWaypointModal
           waypoints={waypoints}
           targetId={targetPendingFocus.id} // ✅ new target ID
-          targetIndex={targets.length}     // ✅ next index
+          targetIndex={targets.length} // ✅ next index
           defaultSelectedWaypointIds={waypoints
             .filter((wp) => wp.focusTargetId === targetPendingFocus.id)
             .map((wp) => wp.id)}
           onConfirm={(selectedIds) => {
             const waypointsWithTarget = waypoints.map((wp) =>
-              selectedIds.includes(wp.id)
-                ? { ...wp, focusTargetId: targetPendingFocus.id }
-                : wp
+              selectedIds.includes(wp.id) ? { ...wp, focusTargetId: targetPendingFocus.id } : wp,
             )
 
             const updatedWaypoints = recalculateHeadings(waypointsWithTarget, [
@@ -435,7 +406,6 @@ const defaultTightness = 15
           }}
         />
       )}
-
 
       {selectedTargetId !== null && (
         <TargetWaypointModal
@@ -464,11 +434,7 @@ const defaultTightness = 15
       )}
 
       {/* 📍 Floating Panels */}
-      <QuickAccessToolbar
-        isMobile={isMobile}
-        onModeChange={setMapMode}
-        currentMode={mapMode}
-      />
+      <QuickAccessToolbar isMobile={isMobile} onModeChange={setMapMode} currentMode={mapMode} />
       {isMobile && (
         <MobileWaypointPanel
           waypoints={waypoints}
@@ -489,17 +455,6 @@ const defaultTightness = 15
           handleSelectSegment={handleSelectSegment}
         />
       )}
-     
-
-
     </div>
-
   )
-
 }
-
-
-
-
-
-

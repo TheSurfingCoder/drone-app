@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { XIcon } from 'lucide-react'
 
-export default function TargetWaypointModal({ waypoints, onConfirm, onCancel, defaultSelectedWaypointIds, readOnly = false, targetId, targetIndex }) {
+export default function TargetWaypointModal({
+  waypoints,
+  onConfirm,
+  onCancel,
+  defaultSelectedWaypointIds,
+  targetId,
+  targetIndex,
+}) {
   const [selectedWaypointIds, setSelectedWaypointIds] = useState([])
 
   /*so this runs on the initial mount of targetwaypointmodal  or when targetid changes. 
@@ -10,18 +17,19 @@ export default function TargetWaypointModal({ waypoints, onConfirm, onCancel, de
   */
   useEffect(() => {
     if (defaultSelectedWaypointIds) {
-    setSelectedWaypointIds(defaultSelectedWaypointIds)
-    console.log('defaault selected waypoint ids', defaultSelectedWaypointIds)
-    console.log('testing the conditional return blocks for selectedtargetid or for showtargetmodal/targetpending focus', targetId)
-}}, [targetId])
-  
+      setSelectedWaypointIds(defaultSelectedWaypointIds)
+      console.log('defaault selected waypoint ids', defaultSelectedWaypointIds)
+      console.log(
+        'testing the conditional return blocks for selectedtargetid or for showtargetmodal/targetpending focus',
+        targetId,
+      )
+    }
+  }, [targetId])
 
- /* This function is called when a waypoint in the modal is clicked. It toggles that waypoint’s selection state. */
+  /* This function is called when a waypoint in the modal is clicked. It toggles that waypoint’s selection state. */
   const handleToggle = (id) => {
     setSelectedWaypointIds((prev) =>
-      prev.includes(id)
-        ? prev.filter((wpId) => wpId !== id)
-        : [...prev, id]
+      prev.includes(id) ? prev.filter((wpId) => wpId !== id) : [...prev, id],
     )
   }
 
@@ -45,9 +53,7 @@ export default function TargetWaypointModal({ waypoints, onConfirm, onCancel, de
 
         {/* Body */}
         <div className="p-4 max-h-[60vh] overflow-y-auto">
-          <p className="text-gray-600 mb-4">
-            Select which waypoints should focus on this target:
-          </p>
+          <p className="text-gray-600 mb-4">Select which waypoints should focus on this target:</p>
           {waypoints.length === 0 ? (
             <p className="text-gray-500 italic">No waypoints available.</p>
           ) : (
@@ -58,16 +64,14 @@ export default function TargetWaypointModal({ waypoints, onConfirm, onCancel, de
                   <div
                     key={wp.id}
                     onClick={() => handleToggle(wp.id)}
-                    className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${isSelected
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:bg-gray-50'
-                      }`}
+                    className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
+                      isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
+                    }`}
                   >
                     <div
-                      className={`w-6 h-6 rounded-full border flex items-center justify-center mr-3 ${isSelected
-                          ? 'bg-blue-500 border-blue-500 text-white'
-                          : 'border-gray-400'
-                        }`}
+                      className={`w-6 h-6 rounded-full border flex items-center justify-center mr-3 ${
+                        isSelected ? 'bg-blue-500 border-blue-500 text-white' : 'border-gray-400'
+                      }`}
                     >
                       {isSelected && (
                         <svg
@@ -86,7 +90,7 @@ export default function TargetWaypointModal({ waypoints, onConfirm, onCancel, de
                       )}
                     </div>
                     <div>
-                      <div className="font-medium">Waypoint #{i+1}</div>
+                      <div className="font-medium">Waypoint #{i + 1}</div>
                       <div className="text-xs text-gray-500">
                         {wp.lat.toFixed(4)}, {wp.lng.toFixed(4)}
                       </div>
@@ -109,10 +113,11 @@ export default function TargetWaypointModal({ waypoints, onConfirm, onCancel, de
           <button
             onClick={handleConfirm}
             disabled={selectedWaypointIds.length === 0}
-            className={`px-4 py-2 rounded-md transition-colors ${selectedWaypointIds.length > 0
+            className={`px-4 py-2 rounded-md transition-colors ${
+              selectedWaypointIds.length > 0
                 ? 'bg-blue-500 hover:bg-blue-600 text-white'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
+            }`}
           >
             Confirm
           </button>
