@@ -31,7 +31,7 @@ export default function WaypointManager({
     click: async (e) => {
       const { lat, lng } = e.latlng
       let groundHeight = 0
-      let height = 50
+      const height = 50
       let groundPosition
       let elevatedPosition
 

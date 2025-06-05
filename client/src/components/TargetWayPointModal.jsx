@@ -11,7 +11,7 @@ export default function TargetWaypointModal({
 }) {
   const [selectedWaypointIds, setSelectedWaypointIds] = useState([])
 
-  /*so this runs on the initial mount of targetwaypointmodal  or when targetid changes. 
+  /* this runs on the initial mount of targetwaypointmodal  or when targetid changes. 
     -so on the very first initial mount, defaultselectedwaypoitids is empty
     -targetid get changed every time we open the modal for a new target
   */
