@@ -256,9 +256,9 @@ export default function MissionPlannerWrapper() {
 
 
   return (
-    <div className="flex flex-col relative w-screen h-screen min-h-screen overflow-hidden">
+    <div className="flex flex-col relative w-screen h-screen overflow-hidden">
       {/* 🧭 Top Bar */}
-      <div className="relative w-full h-[56px] sm:h-auto py-2 items-center bg-white px-4 flex flex-row justify-between gap-2 z-99 sm:h-auto sm:px-4 sm:py-0 sm:flex-row sm:items-center sm:gap-0 sm:py-2">
+      <div className="sticky top-0 w-full h-[56px] sm:h-auto py-2 items-center bg-white px-4 flex flex-row justify-between gap-2 z-99 sm:h-auto sm:px-4 sm:py-0 sm:flex-row sm:items-center sm:gap-0 sm:py-2">
         <div className="flex items-center gap-3">
           <div className="w-30 flex flex-col gap-1 items-center px-2 py-1 text-xs sm:flex sm:flex-row sm:items-center sm:gap-2 sm:text-base">
             <UnitToggle unitSystem={unitSystem} onChange={setUnitSystem} />
@@ -291,17 +291,18 @@ export default function MissionPlannerWrapper() {
             Switch to {viewMode === '2d' ? '3D' : '2D'}
           </button>
         </div>
-        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-[49]">
-          <ModernStatusPill
-            waypoints={waypoints}
-            unitSystem={unitSystem}
-            segmentSpeeds={segmentSpeeds}
-          />
-        </div>
+
+      </div>
+      <div className="absolute top-[64px] left-1/2 -translate-x-1/2 mt-2 z-[999]">
+        <ModernStatusPill
+          waypoints={waypoints}
+          unitSystem={unitSystem}
+          segmentSpeeds={segmentSpeeds}
+        />
       </div>
 
       {/* 🗺 Map View (with top bar padding) */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative z-98">
         {viewMode === '2d' ? (
           <MapComponent
             waypoints={waypoints}
