@@ -1,22 +1,18 @@
-import { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import MapComponent from './Map'
 import CesiumMap from './CesiumMap'
 import UnitToggle from './UnitToggle'
 import DroneController from './DroneController'
-import WaypointList from './WaypointList'
 import CurrentLocationButton from './CurrentLocationButton'
 import { Cartesian3 } from '@cesium/engine'
-import React from 'react'
-import BottomSheet from './BottomSheet'
 import QuickAccessToolbar from './QuickAccessToolbar'
 import ModernStatusPill from './ModernStatusPill'
-import { calculateHeading } from '../utils/headingUtils' // we'll create this next
 import TargetWaypointModal from './TargetWayPointModal'
 import { recalculateHeadings } from '../utils/recalculateHeadings'
 import CountdownModal from './CountdownModal'
-import AltitudeSlider from './AltitudeSlider'
 import MobileWaypointPanel from './MobileWaypointPanel'
 import DesktopWaypointPanel from './DesktopWaypointPanel'
+import L from 'leaflet'
 
 export default function MissionPlannerWrapper() {
   const [viewMode, setViewMode] = useState('2d')
@@ -42,8 +38,7 @@ export default function MissionPlannerWrapper() {
   const hasAutoOpenedDesktopPanel = useRef(false) // tracks if we've already opened it
 
   const isDesktop = !isMobile
-  const defaultSpeed = 10
-  const defaultTightness = 15
+  
 
   const [droneHeading, setDroneHeading] = useState(0)
   const droneHeadingRef = useRef(0)
@@ -111,7 +106,6 @@ export default function MissionPlannerWrapper() {
     )
   }
 
-  const selectedTarget = targets.find((t) => t.id === selectedTargetId)
   const targetIndex = targets.findIndex((t) => t.id === selectedTargetId)
 
   function useIsMobile() {
@@ -241,10 +235,6 @@ export default function MissionPlannerWrapper() {
   const clearWaypoints = () => {
     setWaypoints([])
     setTargets([])
-  }
-
-  const clearLogs = () => {
-    setLogs([])
   }
 
   return (
@@ -453,6 +443,7 @@ export default function MissionPlannerWrapper() {
           segmentSpeeds={segmentSpeeds}
           handleApplySpeedToAll={handleApplySpeedToAll}
           handleSelectSegment={handleSelectSegment}
+          targets={targets}
         />
       )}
     </div>

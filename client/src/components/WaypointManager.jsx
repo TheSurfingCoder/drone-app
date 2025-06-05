@@ -65,6 +65,7 @@ export default function WaypointManager({
         const newTargetId = Date.now()
         setTargetPendingFocus({ ...newPoint, id: newTargetId })
         setShowTargetModal(true)
+        console.log('targets:', targets)
       }
     },
   })

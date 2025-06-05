@@ -18,6 +18,7 @@ const MobileWaypointPanel = ({
   handleSegmentSpeedChange,
   handleApplySpeedToAll,
   handleSelectSegment,
+  targets
 }) => {
   const waypointRefs = useRef({})
   const segmentRefs = useRef({})
@@ -147,10 +148,10 @@ const MobileWaypointPanel = ({
             {expandedPanel &&
               waypoints
                 .filter((wp) => wp.id === expandedPanel)
-                .map((wp) => (
+                .map((wp, i) => (
                   <div key={wp.id} className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-base font-bold text-gray-800">Waypoint #{wp.id}</h3>
+                      <h3 className="text-base font-bold text-gray-800">Waypoint #{i+1}</h3>
                       <button
                         onClick={() => onDeleteWaypoint(wp.id)}
                         className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-md text-xs font-medium transition-colors duration-200"
@@ -209,7 +210,10 @@ const MobileWaypointPanel = ({
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-xs font-medium text-gray-600">Focus Target</span>
                         <span className="text-xs text-gray-800">
-                          {wp.focusTargetId !== null ? `#${wp.focusTargetId}` : 'None'}
+                          {wp.focusTargetId !== null ? (() => {
+                            const index = targets.findIndex((t)=> t.id === wp.focusTargetId)
+                            return `#${index+1}`
+                          })() : 'None'}
                         </span>
                       </div>
                       {wp.focusTargetId !== null ? (
