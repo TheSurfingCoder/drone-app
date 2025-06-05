@@ -6,16 +6,13 @@ import { renderToStaticMarkup } from 'react-dom/server'
 export default function WaypointMarker({
   lat,
   lng,
-  alt,
-  unitSystem,
   onDragEnd,
   heading,
   onClick,
   id,
 }) {
-  const altitude = alt ?? 0
+  
 
-  unitSystem === 'metric' ? `${altitude.toFixed(1)} m` : `${(altitude * 3.28084).toFixed(1)} ft`
 
   const icon = L.divIcon({
     className: '',

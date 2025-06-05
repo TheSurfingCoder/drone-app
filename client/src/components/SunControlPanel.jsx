@@ -1,6 +1,5 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { DateTime } from 'luxon'
-import React from 'react'
 
 export default function SunControlPanel({ onDateTimeChange }) {
   const [date, setDate] = useState('2023-07-01')

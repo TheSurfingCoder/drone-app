@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { DownloadIcon, UploadIcon, MapPinIcon, TargetIcon } from 'lucide-react'
 
 export default function QuickAccessToolbar({ isMobile, isCompactMode, onModeChange, currentMode }) {

@@ -47,7 +47,7 @@ const MobileWaypointPanel = ({
   }, [expandedSegmentId, isMobileCollapsed])
 
   useEffect(() => {
-    if (!isMobileCollapsed && selectedWaypoint != null) {
+    if (!isMobileCollapsed && selectedWaypoint !== null) {
       setExpandedPanel(selectedWaypoint)
     }
   }, [selectedWaypoint, isMobileCollapsed])

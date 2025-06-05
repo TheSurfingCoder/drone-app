@@ -1,5 +1,5 @@
 // utils/getCesiumAltitude.js
-import { Cartographic, sampleTerrainMostDetailed, Math as CesiumMath } from '@cesium/engine'
+import { Cartographic, sampleTerrainMostDetailed } from '@cesium/engine'
 
 /**
  * Samples the Cesium terrain for a given lat/lng.
