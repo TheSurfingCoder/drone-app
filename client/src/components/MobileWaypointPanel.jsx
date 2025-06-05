@@ -18,7 +18,7 @@ const MobileWaypointPanel = ({
   handleSegmentSpeedChange,
   handleApplySpeedToAll,
   handleSelectSegment,
-  targets
+  targets,
 }) => {
   const waypointRefs = useRef({})
   const segmentRefs = useRef({})
@@ -54,8 +54,6 @@ const MobileWaypointPanel = ({
     }
   }, [selectedWaypoint, isMobileCollapsed])
 
-
-
   if (!waypoints.length) return null
 
   const getTotalElevation = (wp) => {
@@ -68,7 +66,6 @@ const MobileWaypointPanel = ({
     const index = Math.min(fromIndex, toIndex)
     return segmentSpeeds?.[index]?.speed ?? 10
   }
-
 
   return (
     <>
@@ -114,28 +111,28 @@ const MobileWaypointPanel = ({
                         segmentRefs.current[segId] = el
                       }}
                       onClick={() => handleSelectSegment(wp.id, waypoints[index + 1].id)}
-                      className={`flex items-center gap-1 px-2 py-1 rounded-full border transition-all duration-200 ${expandedSegmentId === `${wp.id}-${waypoints[index + 1].id}`
-                        ? 'bg-amber-100 border-amber-300 shadow-md scale-105'
-                        : 'bg-blue-50 hover:bg-blue-100 border-blue-200'
-                        }`}
+                      className={`flex items-center gap-1 px-2 py-1 rounded-full border transition-all duration-200 ${
+                        expandedSegmentId === `${wp.id}-${waypoints[index + 1].id}`
+                          ? 'bg-amber-100 border-amber-300 shadow-md scale-105'
+                          : 'bg-blue-50 hover:bg-blue-100 border-blue-200'
+                      }`}
                     >
                       <div
-                        className={`w-2 h-2 rounded-full ${expandedSegmentId === `${wp.id}-${waypoints[index + 1].id}`
-                          ? 'bg-amber-500 animate-bounce'
-                          : 'bg-blue-500 animate-pulse'
-                          }`}
+                        className={`w-2 h-2 rounded-full ${
+                          expandedSegmentId === `${wp.id}-${waypoints[index + 1].id}`
+                            ? 'bg-amber-500 animate-bounce'
+                            : 'bg-blue-500 animate-pulse'
+                        }`}
                       />
                       <span
-                        className={`text-xs font-medium ${expandedSegmentId === `${wp.id}-${waypoints[index + 1].id}`
-                          ? 'text-amber-700'
-                          : 'text-blue-700'
-                          }`}
+                        className={`text-xs font-medium ${
+                          expandedSegmentId === `${wp.id}-${waypoints[index + 1].id}`
+                            ? 'text-amber-700'
+                            : 'text-blue-700'
+                        }`}
                       >
                         {(getSegmentSpeed(wp.id, waypoints[index + 1].id)?.speed ?? 10).toFixed(1)}
-
                       </span>
-
-
                     </button>
                   </div>
                 )}
@@ -151,7 +148,7 @@ const MobileWaypointPanel = ({
                 .map((wp, i) => (
                   <div key={wp.id} className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-base font-bold text-gray-800">Waypoint #{i+1}</h3>
+                      <h3 className="text-base font-bold text-gray-800">Waypoint #{i + 1}</h3>
                       <button
                         onClick={() => onDeleteWaypoint(wp.id)}
                         className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-md text-xs font-medium transition-colors duration-200"
@@ -210,10 +207,12 @@ const MobileWaypointPanel = ({
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-xs font-medium text-gray-600">Focus Target</span>
                         <span className="text-xs text-gray-800">
-                          {wp.focusTargetId !== null ? (() => {
-                            const index = targets.findIndex((t)=> t.id === wp.focusTargetId)
-                            return `#${index+1}`
-                          })() : 'None'}
+                          {wp.focusTargetId !== null
+                            ? (() => {
+                                const index = targets.findIndex((t) => t.id === wp.focusTargetId)
+                                return `#${index + 1}`
+                              })()
+                            : 'None'}
                         </span>
                       </div>
                       {wp.focusTargetId !== null ? (

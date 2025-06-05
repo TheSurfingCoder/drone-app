@@ -128,36 +128,37 @@ export default function WaypointManager({
 
         return (
           <>
-            <Polyline
-              key={`segment-${wp.id}-${next.id}`}
-              positions={latlngs}
-              pathOptions={{
-                color: isCurved ? '#a855f7' : '#2563eb',
-                weight: 3,
-                dashArray: isCurved ? '5,6' : undefined,
-              }}
-              eventHandlers={{
-                click: () => onSelectSegment?.(wp.id, next.id),
-              }}
-            />
-            <PolylineDecorator
-              segmentLatLngs={waypoints.slice(0, -1).map((wp, i) => {
-                const next = waypoints[i + 1]
-                const speedData = segmentSpeeds?.[i] || {}
-                const isCurved = speedData.isCurved
-                const tightness = speedData.curveTightness ?? 15
-                return isCurved
-                  ? getBezierCurvePoints(wp, next, tightness)
-                  : [
-                      [wp.lat, wp.lng],
-                      [next.lat, next.lng],
-                    ]
-              })}
-              segmentSpeeds={segmentSpeeds}
-              onSelectSegment={onSelectSegment}
-              unitSystem={unitSystem}
-              waypoints={waypoints}
-            />
+            <React.Fragment key={`segment-${wp.id}-${next.id}`}>
+              <Polyline
+                positions={latlngs}
+                pathOptions={{
+                  color: isCurved ? '#a855f7' : '#2563eb',
+                  weight: 3,
+                  dashArray: isCurved ? '5,6' : undefined,
+                }}
+                eventHandlers={{
+                  click: () => onSelectSegment?.(wp.id, next.id),
+                }}
+              />
+              <PolylineDecorator
+                segmentLatLngs={waypoints.slice(0, -1).map((wp, i) => {
+                  const next = waypoints[i + 1]
+                  const speedData = segmentSpeeds?.[i] || {}
+                  const isCurved = speedData.isCurved
+                  const tightness = speedData.curveTightness ?? 15
+                  return isCurved
+                    ? getBezierCurvePoints(wp, next, tightness)
+                    : [
+                        [wp.lat, wp.lng],
+                        [next.lat, next.lng],
+                      ]
+                })}
+                segmentSpeeds={segmentSpeeds}
+                onSelectSegment={onSelectSegment}
+                unitSystem={unitSystem}
+                waypoints={waypoints}
+              />
+            </React.Fragment>
           </>
         )
       })}

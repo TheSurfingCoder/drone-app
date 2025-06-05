@@ -34,7 +34,7 @@ export default function DesktopWaypointPanel({
   }, [expandedSegmentId])
 
   useEffect(() => {
-    if (selectedWaypoint != null) {
+    if (selectedWaypoint !== null) {
       const el = document.getElementById(`waypoint-${selectedWaypoint}`)
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
@@ -169,9 +169,9 @@ export default function DesktopWaypointPanel({
                 <div className="text-xs text-gray-600">
                   <div className="flex justify-between mb-1">
                     <span>Focus Target</span>
-                    <span>{wp.focusTargetId != null ? `#${wp.focusTargetId}` : 'None'}</span>
+                    <span>{wp.focusTargetId !== null ? `#${wp.focusTargetId}` : 'None'}</span>
                   </div>
-                  {wp.focusTargetId != null ? (
+                  {wp.focusTargetId !== null ? (
                     <button
                       onClick={() => {
                         setSelectedTargetId(wp.focusTargetId)

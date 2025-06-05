@@ -1,8 +1,9 @@
 import React from 'react'
+import { toast } from 'react-toastify'
 export default function CurrentLocationButton({ onLocate }) {
   const handleClick = () => {
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser.')
+      toast('Geolocation is not supported by your browser.')
       return
     }
 
@@ -13,7 +14,7 @@ export default function CurrentLocationButton({ onLocate }) {
       },
       (error) => {
         console.error('Geolocation error:', error)
-        alert('Unable to retrieve your location.')
+        toast('Unable to retrieve your location.')
       },
       { enableHighAccuracy: true }, // optional: improves GPS precision
     )

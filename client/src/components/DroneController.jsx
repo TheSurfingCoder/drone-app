@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { moveToward } from '../utils/droneMovement'
-import { generateCurvePoints, getBezierCurvePoints } from '../utils/geometry'
+import { getBezierCurvePoints } from '../utils/geometry'
 import { calculateHeadingFromTo } from '../utils/interpolationHeading'
-import L from 'leaflet'
 
 export default function DroneController({
   waypoints,
@@ -75,7 +74,6 @@ export default function DroneController({
       const bezierPoints = getBezierCurvePoints(from, to, seg.curveTightness ?? 15, 20)
 
       if (seg?.isCurved) {
-        const curvePoints = generateCurvePoints(from, to, seg.curveTightness ?? 15, mapRef.current)
         fullPath.push(...bezierPoints) // curved segment path
       } else if (i === 0) {
         fullPath.push({ lat: from.lat, lng: from.lng })

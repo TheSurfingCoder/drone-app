@@ -3,17 +3,7 @@ import L from 'leaflet'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-export default function WaypointMarker({
-  lat,
-  lng,
-  onDragEnd,
-  heading,
-  onClick,
-  id,
-}) {
-  
-
-
+export default function WaypointMarker({ lat, lng, onDragEnd, heading, onClick, id }) {
   const icon = L.divIcon({
     className: '',
     iconSize: [40, 40],

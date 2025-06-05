@@ -38,7 +38,6 @@ export default function MissionPlannerWrapper() {
   const hasAutoOpenedDesktopPanel = useRef(false) // tracks if we've already opened it
 
   const isDesktop = !isMobile
-  
 
   const [droneHeading, setDroneHeading] = useState(0)
   const droneHeadingRef = useRef(0)

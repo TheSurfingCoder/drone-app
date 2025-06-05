@@ -35,7 +35,6 @@ export default function CesiumMap({
 }) {
   const viewerRef = useRef(null)
   const [viewer, setViewer] = useState(null)
-  const [showOSM, setShowOSM] = useState(false)
   const [mapMode, setMapMode] = useState('osm') // ✅ default to OSM
   const [showOSMBuildings, setShowOSMBuildings] = useState(true) // ✅ also default to buildings ON
 
@@ -160,10 +159,6 @@ export default function CesiumMap({
       return viewerRef.current?.cesiumElement
     },
   }))
-
-  const handleToggle = (layer) => {
-    if (layer === 'osm') setShowOSM((prev) => !prev)
-  }
 
   const handleSunDateTimeChange = (jsDate) => {
     if (!viewer) return
