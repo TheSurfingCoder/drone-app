@@ -21,6 +21,7 @@ const MobileWaypointPanel = ({
 }) => {
   const waypointRefs = useRef({})
   const segmentRefs = useRef({})
+  const [expandedPanel, setExpandedPanel] = useState(null)
 
   useEffect(() => {
     console.log('🚀 segmentSpeeds updated:', segmentSpeeds)
@@ -52,7 +53,7 @@ const MobileWaypointPanel = ({
     }
   }, [selectedWaypoint, isMobileCollapsed])
 
-  const [expandedPanel, setExpandedPanel] = useState(null)
+
 
   if (!waypoints.length) return null
 
@@ -64,12 +65,9 @@ const MobileWaypointPanel = ({
     const fromIndex = waypoints.findIndex((wp) => wp.id === fromId)
     const toIndex = waypoints.findIndex((wp) => wp.id === toId)
     const index = Math.min(fromIndex, toIndex)
-    console.log('🔎 getSegmentSpeed from:', fromId, 'to:', toId)
-    console.log('📍 Indices:', fromIndex, toIndex, '=> Index used:', index)
-    console.log('📊 segmentSpeeds:', segmentSpeeds)
-
-    return segmentSpeeds?.[index] ?? 10
+    return segmentSpeeds?.[index]?.speed ?? 10
   }
+
 
   return (
     <>
@@ -115,28 +113,28 @@ const MobileWaypointPanel = ({
                         segmentRefs.current[segId] = el
                       }}
                       onClick={() => handleSelectSegment(wp.id, waypoints[index + 1].id)}
-                      className={`flex items-center gap-1 px-2 py-1 rounded-full border transition-all duration-200 ${
-                        expandedSegmentId === `${wp.id}-${waypoints[index + 1].id}`
-                          ? 'bg-amber-100 border-amber-300 shadow-md scale-105'
-                          : 'bg-blue-50 hover:bg-blue-100 border-blue-200'
-                      }`}
+                      className={`flex items-center gap-1 px-2 py-1 rounded-full border transition-all duration-200 ${expandedSegmentId === `${wp.id}-${waypoints[index + 1].id}`
+                        ? 'bg-amber-100 border-amber-300 shadow-md scale-105'
+                        : 'bg-blue-50 hover:bg-blue-100 border-blue-200'
+                        }`}
                     >
                       <div
-                        className={`w-2 h-2 rounded-full ${
-                          expandedSegmentId === `${wp.id}-${waypoints[index + 1].id}`
-                            ? 'bg-amber-500 animate-bounce'
-                            : 'bg-blue-500 animate-pulse'
-                        }`}
+                        className={`w-2 h-2 rounded-full ${expandedSegmentId === `${wp.id}-${waypoints[index + 1].id}`
+                          ? 'bg-amber-500 animate-bounce'
+                          : 'bg-blue-500 animate-pulse'
+                          }`}
                       />
                       <span
-                        className={`text-xs font-medium ${
-                          expandedSegmentId === `${wp.id}-${waypoints[index + 1].id}`
-                            ? 'text-amber-700'
-                            : 'text-blue-700'
-                        }`}
+                        className={`text-xs font-medium ${expandedSegmentId === `${wp.id}-${waypoints[index + 1].id}`
+                          ? 'text-amber-700'
+                          : 'text-blue-700'
+                          }`}
                       >
-                        {getSegmentSpeed(wp.id, waypoints[index + 1].id).toFixed(1)}
+                        {(getSegmentSpeed(wp.id, waypoints[index + 1].id)?.speed ?? 10).toFixed(1)}
+
                       </span>
+
+
                     </button>
                   </div>
                 )}
@@ -211,10 +209,10 @@ const MobileWaypointPanel = ({
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-xs font-medium text-gray-600">Focus Target</span>
                         <span className="text-xs text-gray-800">
-                          {wp.focusTargetId != null ? `#${wp.focusTargetId}` : 'None'}
+                          {wp.focusTargetId !== null ? `#${wp.focusTargetId}` : 'None'}
                         </span>
                       </div>
-                      {wp.focusTargetId != null ? (
+                      {wp.focusTargetId !== null ? (
                         <button
                           onClick={() => {
                             setSelectedTargetId(wp.focusTargetId)
