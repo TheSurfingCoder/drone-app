@@ -256,7 +256,7 @@ export default function MissionPlannerWrapper() {
 
 
   return (
-    <div className="flex flex-col relative w-screen h-screen">
+    <div className="flex flex-col relative w-screen h-screen min-h-screen overflow-hidden">
       {/* 🧭 Top Bar */}
       <div className="relative w-full h-[56px] sm:h-auto py-2 items-center bg-white px-4 flex flex-row justify-between gap-2 z-99 sm:h-auto sm:px-4 sm:py-0 sm:flex-row sm:items-center sm:gap-0 sm:py-2">
         <div className="flex items-center gap-3">

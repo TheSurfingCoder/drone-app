@@ -140,7 +140,7 @@ const MobileWaypointPanel = ({
             ))}
           </div>
 
-          <div className="overflow-y-auto max-h-[45vh] p-3">
+          <div className="overflow-y-auto max-h-[30vh] p-3">
             {/* Waypoint Details */}
             {expandedPanel &&
               waypoints
