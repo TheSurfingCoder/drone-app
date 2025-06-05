@@ -65,6 +65,7 @@ export default function WaypointBillboardOverlay({ waypoints, sceneMode }) {
                   semiMinorAxis={5.0}
                   material={Color.RED.withAlpha(0.6)}
                   heightReference={HeightReference.CLAMP_TO_GROUND}
+                  height={0}
                 />
               </Entity>
             )}

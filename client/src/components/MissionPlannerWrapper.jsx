@@ -4,7 +4,7 @@ import CesiumMap from './CesiumMap'
 import UnitToggle from './UnitToggle'
 import DroneController from './DroneController'
 import CurrentLocationButton from './CurrentLocationButton'
-import { Cartesian3 } from '@cesium/engine'
+import { Cartesian3 } from 'cesium'
 import QuickAccessToolbar from './QuickAccessToolbar'
 import ModernStatusPill from './ModernStatusPill'
 import TargetWaypointModal from './TargetWayPointModal'
@@ -236,6 +236,25 @@ export default function MissionPlannerWrapper() {
     setTargets([])
   }
 
+
+  // Safely hydrate waypoints for Cesium. Used if your app ever loads saved/incomplete waypoints.
+  const hydratedWaypoints = waypoints.map((wp) => ({
+    ...wp,
+    groundPosition:
+      typeof wp.groundPosition === 'object'
+        ? wp.groundPosition
+        : Cartesian3.fromDegrees(wp.lng, wp.lat, wp.groundHeight ?? 0),
+    elevatedPosition:
+      typeof wp.elevatedPosition === 'object'
+        ? wp.elevatedPosition
+        : Cartesian3.fromDegrees(
+          wp.lng,
+          wp.lat,
+          (wp.groundHeight ?? 0) + (wp.height ?? 50)
+        ),
+  }))
+
+
   return (
     <div className="flex flex-col relative w-screen h-screen">
       {/* 🧭 Top Bar */}
@@ -313,14 +332,10 @@ export default function MissionPlannerWrapper() {
           />
         ) : (
           <CesiumMap
-            waypoints={waypoints}
+            waypoints={hydratedWaypoints}
             setWaypoints={setWaypoints}
-            unitSystem={unitSystem}
-            setUnitSystem={setUnitSystem}
             ref={viewerRef}
             overlayType={mapMode}
-            dronePosition={dronePosition}
-            setDronePosition={setDronePosition}
             targets={targets}
             setTargets={setTargets}
           />

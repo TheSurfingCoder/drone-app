@@ -31,7 +31,7 @@ export default function CesiumMap({
   ref,
   targets,
   setTargets,
-  overlayType,
+  overlayType
 }) {
   const viewerRef = useRef(null)
   const [viewer, setViewer] = useState(null)
