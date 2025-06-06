@@ -96,7 +96,7 @@ const MobileWaypointPanel = ({
             {waypoints.map((wp, index) => (
               <Fragment key={wp.id}>
                 <button
-                  className={`px-3 py-1.5 rounded-lg whitespace-nowrap text-xs font-medium transition-all duration-200 ${expandedPanel === wp.id ? 'bg-blue-500 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  className={`px-3 py-1.5 rounded-lg whitespace-nowrap text-xs font-medium transition-all duration-200 ${expandedPanel === wp.id && !expandedSegmentId ? 'bg-blue-500 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                   onClick={() => onSelectWaypoint(wp.id)}
                   ref={(el) => (waypointRefs.current[wp.id] = el)}
                 >
@@ -141,7 +141,7 @@ const MobileWaypointPanel = ({
 
           <div className="overflow-y-auto max-h-[27vh] p-3">
             {/* Waypoint Details */}
-            {expandedPanel &&
+            {expandedPanel && !expandedSegmentId &&
               waypoints
                 .filter((wp) => wp.id === expandedPanel)
                 .map((wp, i) => (
@@ -248,7 +248,7 @@ const MobileWaypointPanel = ({
                 ))}
 
             {/* Segment Speed Editor */}
-            {expandedSegmentId &&
+            {expandedSegmentId && 
               (() => {
                 const [fromId, toId] = expandedSegmentId.split('-').map(Number)
                 const speed = getSegmentSpeed(fromId, toId)
