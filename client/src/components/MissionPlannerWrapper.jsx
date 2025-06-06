@@ -234,6 +234,7 @@ export default function MissionPlannerWrapper() {
   const clearWaypoints = () => {
     setWaypoints([])
     setTargets([])
+    setSegmentSpeeds([])
   }
 
 
