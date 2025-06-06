@@ -69,7 +69,7 @@ const MobileWaypointPanel = ({
 
   return (
     <>
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white rounded-t-xl shadow-2xl transition-all duration-300 ease-out">
+      <div className="md:hidden w-full h-auto bg-white rounded-t-xl shadow-2xl transition-all duration-300 ease-out">
         <div
           className="w-full flex flex-col items-center py-2 cursor-pointer border-b border-gray-100"
           onClick={() => setIsMobileCollapsed(!isMobileCollapsed)}
@@ -140,7 +140,7 @@ const MobileWaypointPanel = ({
             ))}
           </div>
 
-          <div className="overflow-y-auto max-h-[30vh] p-3">
+          <div className="overflow-y-auto max-h-[27vh] p-3">
             {/* Waypoint Details */}
             {expandedPanel &&
               waypoints

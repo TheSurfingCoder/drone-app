@@ -57,7 +57,6 @@ export default function MapComponent({
   console.log('🔄 Rendering drone with heading:', droneHeading)
 
   return (
-    <div className="relative h-full w-full">
       <MapContainer
         ref={ref}
         center={startPosition}
@@ -68,7 +67,7 @@ export default function MapComponent({
         whenCreated={
           (map) => console.log('Leaflet map created:', map) // ✅ Add this
         } // bind map ref on creation
-        className="fullscreen-map z-0"
+        className='h-full w-full'
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -99,6 +98,6 @@ export default function MapComponent({
           <RotatingDroneMarker position={dronePosition} heading={droneHeading} icon={droneIcon} />
         )}
       </MapContainer>
-    </div>
+    
   )
 }

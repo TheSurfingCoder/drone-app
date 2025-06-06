@@ -15,10 +15,7 @@ html,
   overflow: hidden;
 }
 
-.fullscreen-map {
-  height: calc(100vh - 3.5rem); /* match Tailwind top bar */
-  width: 100%;
-}
+
 
 .speed-label {
   background: white;
