@@ -432,7 +432,7 @@ export default function MissionPlannerWrapper() {
       {/* 📍 Floating Panels */}
       <QuickAccessToolbar isMobile={isMobile} onModeChange={setMapMode} currentMode={mapMode} />
       {isMobile && (
-        <div className="absolute bottom-0 left-0 right-0 z-999">
+        <div className="fixed bottom-0 left-0 right-0 z-999">
           <MobileWaypointPanel
             waypoints={waypoints}
             selectedWaypoint={selectedWaypoint}
@@ -457,7 +457,7 @@ export default function MissionPlannerWrapper() {
 
       )}
       {isDesktop && (
-        <div className="fixed right-0 top-0 bottom-0 z-9999 ">
+        <div className="absolute right-0 top-0 bottom-0 z-9999 ">
           <DesktopWaypointPanel
             waypoints={waypoints}
             selectedWaypoint={selectedWaypoint}
