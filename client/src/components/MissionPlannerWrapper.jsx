@@ -341,29 +341,7 @@ export default function MissionPlannerWrapper() {
           />
         )}
 
-        {isDesktop && (
-          <DesktopWaypointPanel
-            waypoints={waypoints}
-            selectedWaypoint={selectedWaypoint}
-            onSelectWaypoint={handleSelectWaypoint}
-            onUpdateWaypoint={handleUpdateWaypoint}
-            onDeleteWaypoint={handleDeleteWaypoint}
-            segmentSpeeds={segmentSpeeds}
-            expandedSegmentId={expandedSegmentId}
-            setExpandedSegmentId={setExpandedSegmentId}
-            handleSegmentSpeedChange={handleSegmentSpeedChange}
-            handleApplySpeedToAll={handleApplySpeedToAll}
-            setSelectedTargetId={setSelectedTargetId}
-            setShowTargetModal={setShowTargetModal}
-            onModeChange={setMapMode}
-            unitSystem={unitSystem}
-            isDesktopCollapsed={isDesktopCollapsed}
-            setIsDesktopCollapsed={setIsDesktopCollapsed}
-            onSelectSegment={handleSelectSegment}
-            setSegmentSpeeds={setSegmentSpeeds}
-            handleCurveTightnessChange={handleCurveTightnessChange}
-          />
-        )}
+        
       </div>
 
       {/* ✅ Modal rendered globally, not inside map logic */}
@@ -461,8 +439,34 @@ export default function MissionPlannerWrapper() {
             targets={targets}
           />
         </div>
+        
 
       )}
+      {isDesktop && (
+        <div className="absolute right-0 top-0 bottom-0 z-9999 ">
+          <DesktopWaypointPanel
+            waypoints={waypoints}
+            selectedWaypoint={selectedWaypoint}
+            onSelectWaypoint={handleSelectWaypoint}
+            onUpdateWaypoint={handleUpdateWaypoint}
+            onDeleteWaypoint={handleDeleteWaypoint}
+            segmentSpeeds={segmentSpeeds}
+            expandedSegmentId={expandedSegmentId}
+            setExpandedSegmentId={setExpandedSegmentId}
+            handleSegmentSpeedChange={handleSegmentSpeedChange}
+            handleApplySpeedToAll={handleApplySpeedToAll}
+            setSelectedTargetId={setSelectedTargetId}
+            setShowTargetModal={setShowTargetModal}
+            onModeChange={setMapMode}
+            unitSystem={unitSystem}
+            isDesktopCollapsed={isDesktopCollapsed}
+            setIsDesktopCollapsed={setIsDesktopCollapsed}
+            onSelectSegment={handleSelectSegment}
+            setSegmentSpeeds={setSegmentSpeeds}
+            handleCurveTightnessChange={handleCurveTightnessChange}
+          />
+          </div>
+        )}
     </div>
   )
 }
