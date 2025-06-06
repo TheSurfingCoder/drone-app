@@ -54,7 +54,6 @@ const MobileWaypointPanel = ({
     }
   }, [selectedWaypoint, isMobileCollapsed])
 
-  if (!waypoints.length) return null
 
   const getTotalElevation = (wp) => {
     return (wp.groundHeight ?? 0) + (wp.height ?? 0)

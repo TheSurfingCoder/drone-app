@@ -34,7 +34,7 @@ export default function MissionPlannerWrapper() {
   const [selectedWaypoint, setSelectedWaypoint] = useState(null)
   const [isMobileCollapsed, setIsMobileCollapsed] = useState(true)
   const [expandedSegmentId, setExpandedSegmentId] = useState(null)
-  const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(true)
+  const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false)
   const hasAutoOpenedDesktopPanel = useRef(false) // tracks if we've already opened it
 
   const isDesktop = !isMobile
