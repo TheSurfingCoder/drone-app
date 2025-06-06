@@ -15,7 +15,7 @@ import {
   Cartesian3,
   Matrix3,
   createWorldTerrainAsync,
-  createWorldImageryAsync,
+  createWorldImageryAsync
 } from 'cesium'
 import WaypointBillboardOverlay from './WaypointBillboardOverlay'
 import Layers from './Layers'
@@ -31,12 +31,12 @@ export default function CesiumMap({
   ref,
   targets,
   setTargets,
-  overlayType
+  overlayType,
+  googlePhotorealistic,
+  sunTime
 }) {
   const viewerRef = useRef(null)
   const [viewer, setViewer] = useState(null)
-  const [mapMode, setMapMode] = useState('osm') // ✅ default to OSM
-  const [showOSMBuildings, setShowOSMBuildings] = useState(true) // ✅ also default to buildings ON
 
   // Attach viewer instance
   useEffect(() => {
@@ -130,7 +130,7 @@ export default function CesiumMap({
     return () => {
       handler.destroy()
     }
-  }, [viewer, mapMode, setWaypoints, setTargets, targets])
+  }, [viewer, googlePhotorealistic, setWaypoints, setTargets, targets])
 
   useEffect(() => {
     if (!viewer) return
@@ -139,7 +139,7 @@ export default function CesiumMap({
     imageryLayers.removeAll() // Clear all imagery layers
 
     const setupLayers = async () => {
-      if (mapMode === 'osm') {
+      if (!googlePhotorealistic) {
         // 1. Set terrain
         const worldTerrain = await createWorldTerrainAsync()
         viewer.terrainProvider = worldTerrain
@@ -151,7 +151,7 @@ export default function CesiumMap({
     }
 
     setupLayers()
-  }, [viewer, mapMode])
+  }, [viewer, googlePhotorealistic])
 
   // Expose viewer to parent
   useImperativeHandle(ref, () => ({
@@ -167,6 +167,7 @@ export default function CesiumMap({
     console.log('📆 Julian Date as JS date:', JulianDate.toDate(julian).toISOString())
 
     viewer.clock.currentTime = julian
+    viewer.clock.shouldAnimate = false // freezes time
 
     console.log(viewer.scene.light)
     updateSkyAtmosphereFromSun(viewer)
@@ -226,23 +227,21 @@ export default function CesiumMap({
     }
   }
 
-  console.log('waypoints', waypoints)
+  useEffect(() => {
+    if (sunTime && viewer) {
+      handleSunDateTimeChange(sunTime)
+    }
+  }, [sunTime, viewer])
+  
+
 
   return (
     <div id="cesium map main div" className="relative w-full h-full bg-red-100">
       {console.trace('🟥 CesiumMap wrapper div rendered')}
-      <div className="absolute top-4 left-0 right-0 flex flex-row gap-2 px-4 justify-center z-30">
-        <Layers
-          mapMode={mapMode}
-          setMapMode={setMapMode}
-          showOSMBuildings={showOSMBuildings}
-          toggleOSMBuildings={() => setShowOSMBuildings((prev) => !prev)}
-        />
 
-        {viewerRef.current?.cesiumElement && (
-          <SunControlPanel onDateTimeChange={handleSunDateTimeChange} />
-        )}
-      </div>
+
+
+
       <Viewer
         ref={viewerRef}
         className="h-full w-full z-0"
@@ -257,22 +256,23 @@ export default function CesiumMap({
         animation={false}
       >
         <Sun show={true} />
-        {mapMode === 'google' && (
+
+        {googlePhotorealistic ? (
           <Cesium3DTileset
-            url={IonResource.fromAssetId(2275207)} // Google 3D tiles
+          key="google-tiles"
+            url={IonResource.fromAssetId(2275207)}
             onError={(e) => console.error('Google Tileset error', e)}
             onReady={(e) => console.log('Google Tileset loaded', e)}
           />
-        )}
-
-        {mapMode === 'osm' && showOSMBuildings && (
+        ) : (
           <Cesium3DTileset
-            url={IonResource.fromAssetId(96188)} // OSM Buildings
+          key="osm-tiles"
+
+            url={IonResource.fromAssetId(96188)}
             onError={(e) => console.error('OSM Tileset error', e)}
             onReady={(e) => console.log('OSM Tileset loaded', e)}
           />
         )}
-
         <WaypointBillboardOverlay waypoints={waypoints} sceneMode={viewer?.scene.mode} />
         <TargetEntity targets={targets} sceneMode={viewer?.scene.mode} />
       </Viewer>

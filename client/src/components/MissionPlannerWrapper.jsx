@@ -13,6 +13,7 @@ import CountdownModal from './CountdownModal'
 import MobileWaypointPanel from './MobileWaypointPanel'
 import DesktopWaypointPanel from './DesktopWaypointPanel'
 import L from 'leaflet'
+import ModernStatusPillWrapper from './ModernStatusPillWrapper'
 
 export default function MissionPlannerWrapper() {
   const [viewMode, setViewMode] = useState('2d')
@@ -36,6 +37,10 @@ export default function MissionPlannerWrapper() {
   const [expandedSegmentId, setExpandedSegmentId] = useState(null)
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false)
   const hasAutoOpenedDesktopPanel = useRef(false) // tracks if we've already opened it
+  const [googlePhotorealistic, setGooglePhotorealistic] = useState(true)
+  const [sunTime, setSunTime] = useState(new Date())
+  const [showOSMBuildings, setShowOSMBuildings] = useState(true)
+
 
   const isDesktop = !isMobile
 
@@ -293,11 +298,17 @@ export default function MissionPlannerWrapper() {
           </button>
         </div>
         <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-[49]">
-          <ModernStatusPill
+          <ModernStatusPillWrapper
+            viewMode={viewMode}
             waypoints={waypoints}
             unitSystem={unitSystem}
             segmentSpeeds={segmentSpeeds}
+            googlePhotorealistic={googlePhotorealistic}
+            setGooglePhotorealistic={setGooglePhotorealistic}
+            currentTimeUTC={sunTime.toUTCString().slice(17, 22) + ' UTC'}
+            onDateTimeChange={setSunTime}
           />
+
         </div>
       </div>
 
@@ -339,10 +350,12 @@ export default function MissionPlannerWrapper() {
             overlayType={mapMode}
             targets={targets}
             setTargets={setTargets}
+            googlePhotorealistic={googlePhotorealistic}
+            sunTime={sunTime}
           />
         )}
 
-        
+
       </div>
 
       {/* ✅ Modal rendered globally, not inside map logic */}
@@ -440,7 +453,7 @@ export default function MissionPlannerWrapper() {
             targets={targets}
           />
         </div>
-        
+
 
       )}
       {isDesktop && (
@@ -466,8 +479,8 @@ export default function MissionPlannerWrapper() {
             setSegmentSpeeds={setSegmentSpeeds}
             handleCurveTightnessChange={handleCurveTightnessChange}
           />
-          </div>
-        )}
+        </div>
+      )}
     </div>
   )
 }
