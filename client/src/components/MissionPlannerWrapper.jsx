@@ -457,7 +457,7 @@ export default function MissionPlannerWrapper() {
 
       )}
       {isDesktop && (
-        <div className="absolute right-0 top-0 bottom-0 z-9999 ">
+        <div className="fixed right-0 top-0 bottom-0 z-9999 ">
           <DesktopWaypointPanel
             waypoints={waypoints}
             selectedWaypoint={selectedWaypoint}
