@@ -18,6 +18,12 @@ func main() {
 	// Create a new mux router
 	mux := http.NewServeMux()
 
+	// Root endpoint
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"message":"Drone Planner API is running","status":"ok","timestamp":"%s"}`, time.Now().Format(time.RFC3339))
+	})
+
 	// Health check endpoint
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -38,7 +44,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 		// Get the frontend URL from environment variable or use default
 		frontendURL := os.Getenv("FRONTEND_URL")
 		if frontendURL == "" {
-			frontendURL = "https://drone-app-q23f.vercel.app" // Your Vercel frontend URL
+			frontendURL = "https://drone-app-q23f.vercel.app" // Default Vercel frontend URL
 		}
 
 		// Set CORS headers

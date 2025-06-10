@@ -20,8 +20,9 @@ import {
 import WaypointBillboardOverlay from './WaypointBillboardOverlay'
 import { recalculateHeadings } from '../utils/recalculateHeadings'
 import TargetEntity from './TargetEntity'
+import config from '../config'
 
-Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_TOKEN
+Ion.defaultAccessToken = config.cesiumToken
 
 export default function CesiumMap({
   waypoints,
