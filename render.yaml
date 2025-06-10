@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: drone-planner-api
+    env: go
+    region: oregon
+    buildCommand: cd server && go mod download && go build -o drone-planner-server
+    startCommand: cd server && ./drone-planner-server
+    envVars:
+      - key: GO_ENV
+        value: production
+      - key: GO_VERSION
+        value: 1.24.0
+      # Add other environment variables as needed
+      # - key: MONGODB_URI
+      #   sync: false
+      # - key: API_KEY
+      #   sync: false 
