@@ -1,4 +1,6 @@
 import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import cesium from 'vite-plugin-cesium'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
 
 const cesiumSource = 'node_modules/cesium/Build/Cesium'
@@ -14,16 +16,36 @@ export default defineConfig({
     CESIUM_BASE_URL: JSON.stringify(`/${cesiumBaseUrl}`),
   },
   plugins: [
+    react(),
+    cesium(),
     // Copy Cesium Assets, Widgets, and Workers to a static directory.
     // If you need to add your own static files to your project, use the `public` directory
     // and other options listed here: https://vitejs.dev/guide/assets.html#the-public-directory
     viteStaticCopy({
       targets: [
-        { src: `${cesiumSource}/ThirdParty`, dest: cesiumBaseUrl },
-        { src: `${cesiumSource}/Workers`, dest: cesiumBaseUrl },
-        { src: `${cesiumSource}/Assets`, dest: cesiumBaseUrl },
-        { src: `${cesiumSource}/Widgets`, dest: cesiumBaseUrl },
-      ],
+        {
+          src: 'node_modules/cesium/Build/Cesium/Workers',
+          dest: 'cesium'
+        },
+        {
+          src: 'node_modules/cesium/Build/Cesium/ThirdParty',
+          dest: 'cesium'
+        },
+        {
+          src: 'node_modules/cesium/Build/Cesium/Assets',
+          dest: 'cesium'
+        },
+        {
+          src: 'node_modules/cesium/Build/Cesium/Widgets',
+          dest: 'cesium'
+        }
+      ]
     }),
   ],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.js'],
+    css: true,
+  }
 })

@@ -26,11 +26,18 @@
     "lint": "eslint \"src/**/*.{js,jsx}\" --fix",
     "lint:check": "eslint \"src/**/*.{js,jsx}\" --cache --quiet",
     "prettier": "prettier --write \"**/*\"",
-    "prettier-check": "prettier --check \"**/*\""
+    "prettier-check": "prettier --check \"**/*\"",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
     "@eslint/js": "^9.26.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@vitejs/plugin-react": "^4.4.1",
+    "@vitest/ui": "^3.2.3",
     "autoprefixer": "^10.4.21",
     "eslint": "^8.57.1",
     "eslint-config-cesium": "^10.0.2",
@@ -40,12 +47,14 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "husky": "^8.0.3",
+    "jsdom": "^26.1.0",
     "postcss": "^8.5.3",
     "prettier": "^3.2.4",
     "tailwindcss": "^3.4.17",
     "vite": "^5.0.8",
     "vite-plugin-cesium": "^1.2.23",
-    "vite-plugin-static-copy": "^1.0.6"
+    "vite-plugin-static-copy": "^1.0.6",
+    "vitest": "^3.2.3"
   },
   "dependencies": {
     "@turf/turf": "^7.2.0",
