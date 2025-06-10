@@ -1,8 +1,14 @@
 import React, { useState } from 'react'
-import { SatelliteIcon, BuildingIcon, SunIcon, ClockIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
+import {
+  SatelliteIcon,
+  BuildingIcon,
+  SunIcon,
+  ClockIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from 'lucide-react'
 import SunControlPanel from './SunControlPanel'
 import { calculateDistance, estimateDuration } from '../utils/distanceUtils'
-
 
 export default function ModernStatus3DPill({
   googlePhotorealistic,
@@ -21,7 +27,6 @@ export default function ModernStatus3DPill({
   const distanceLabel = unitSystem === 'imperial' ? 'mi' : 'km'
   const durationMin = (estimateDuration(waypoints, segmentSpeeds) / 60).toFixed(1)
 
-
   return (
     <div className="flex flex-col items-center space-y-2">
       <div className="bg-white rounded-full shadow-lg border border-gray-200 px-2 py-1 flex items-center space-x-1 max-w-fit">
@@ -36,13 +41,15 @@ export default function ModernStatus3DPill({
           <div className="w-px h-3.5 bg-gray-300" />
           <span className="text-gray-700 font-medium">{durationMin} min</span>
         </div>
-  
+
         {/* Map Style Toggle */}
         <div className="flex bg-gray-100 rounded-full p-0.5">
           <button
             onClick={() => setGooglePhotorealistic(true)}
             className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-              googlePhotorealistic ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'
+              googlePhotorealistic
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-800'
             }`}
           >
             <SatelliteIcon className="w-4 h-4" />
@@ -51,17 +58,19 @@ export default function ModernStatus3DPill({
           <button
             onClick={() => setGooglePhotorealistic(false)}
             className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-              !googlePhotorealistic ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'
+              !googlePhotorealistic
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-800'
             }`}
           >
             <BuildingIcon className="w-4 h-4" />
             <span className="hidden sm:inline">OSM</span>
           </button>
         </div>
-  
+
         {/* Divider */}
         <div className="w-px h-7 bg-gray-200" />
-  
+
         {/* Sun Widget Toggle */}
         <button
           onClick={() => setShowControls((prev) => !prev)}
@@ -89,7 +98,7 @@ export default function ModernStatus3DPill({
           </div>
         </button>
       </div>
-  
+
       {/* Expanded Sun Control Panel */}
       {showControls && (
         <div className="bg-white border border-gray-200 shadow-md rounded-xl p-4 mt-1 w-[300px]">
@@ -98,5 +107,4 @@ export default function ModernStatus3DPill({
       )}
     </div>
   )
-  
 }

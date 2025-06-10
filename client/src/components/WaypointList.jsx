@@ -41,7 +41,7 @@ export default function WaypointList({ waypoints, setWaypoints, unitSystem }) {
             <div>Height from Base: {wp.height}</div>
 
             <AltitudeSlider
-              value={wp.height + wp.groundHeight ?? 0}
+              value={wp.height + (wp.groundHeight ?? 0)}
               minHeight={0}
               unitSystem={unitSystem}
               onChange={(newHeight) => {

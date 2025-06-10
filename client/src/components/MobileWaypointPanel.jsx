@@ -54,7 +54,6 @@ const MobileWaypointPanel = ({
     }
   }, [selectedWaypoint, isMobileCollapsed])
 
-
   const getTotalElevation = (wp) => {
     return (wp.groundHeight ?? 0) + (wp.height ?? 0)
   }
@@ -141,7 +140,8 @@ const MobileWaypointPanel = ({
 
           <div className="overflow-y-auto max-h-[27vh] p-3">
             {/* Waypoint Details */}
-            {expandedPanel && !expandedSegmentId &&
+            {expandedPanel &&
+              !expandedSegmentId &&
               waypoints
                 .filter((wp) => wp.id === expandedPanel)
                 .map((wp, i) => (
@@ -248,7 +248,7 @@ const MobileWaypointPanel = ({
                 ))}
 
             {/* Segment Speed Editor */}
-            {expandedSegmentId && 
+            {expandedSegmentId &&
               (() => {
                 const [fromId, toId] = expandedSegmentId.split('-').map(Number)
                 const speed = getSegmentSpeed(fromId, toId)

@@ -52,7 +52,7 @@ export default function DesktopWaypointPanel({
 
   return (
     <div
-      className={` absolute top-[56px] right-0 bottom-0 h-[calc(100%-56px)] md:block transition-all duration-300 ease-out ${
+      className={` absolute top-[52px] right-0 bottom-0 h-[calc(100%-56px)] md:block transition-all duration-300 ease-out ${
         isDesktopCollapsed ? 'translate-x-full' : 'translate-x-0'
       }`}
     >

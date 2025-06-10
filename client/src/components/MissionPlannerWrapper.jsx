@@ -6,7 +6,6 @@ import DroneController from './DroneController'
 import CurrentLocationButton from './CurrentLocationButton'
 import { Cartesian3 } from 'cesium'
 import QuickAccessToolbar from './QuickAccessToolbar'
-import ModernStatusPill from './ModernStatusPill'
 import TargetWaypointModal from './TargetWayPointModal'
 import { recalculateHeadings } from '../utils/recalculateHeadings'
 import CountdownModal from './CountdownModal'
@@ -39,8 +38,6 @@ export default function MissionPlannerWrapper() {
   const hasAutoOpenedDesktopPanel = useRef(false) // tracks if we've already opened it
   const [googlePhotorealistic, setGooglePhotorealistic] = useState(true)
   const [sunTime, setSunTime] = useState(new Date())
-  const [showOSMBuildings, setShowOSMBuildings] = useState(true)
-
 
   const isDesktop = !isMobile
 
@@ -242,7 +239,6 @@ export default function MissionPlannerWrapper() {
     setSegmentSpeeds([])
   }
 
-
   // Safely hydrate waypoints for Cesium. Used if your app ever loads saved/incomplete waypoints.
   const hydratedWaypoints = waypoints.map((wp) => ({
     ...wp,
@@ -253,13 +249,8 @@ export default function MissionPlannerWrapper() {
     elevatedPosition:
       typeof wp.elevatedPosition === 'object'
         ? wp.elevatedPosition
-        : Cartesian3.fromDegrees(
-          wp.lng,
-          wp.lat,
-          (wp.groundHeight ?? 0) + (wp.height ?? 50)
-        ),
+        : Cartesian3.fromDegrees(wp.lng, wp.lat, (wp.groundHeight ?? 0) + (wp.height ?? 50)),
   }))
-
 
   return (
     <div className=" relative w-screen h-screen ">
@@ -305,10 +296,9 @@ export default function MissionPlannerWrapper() {
             segmentSpeeds={segmentSpeeds}
             googlePhotorealistic={googlePhotorealistic}
             setGooglePhotorealistic={setGooglePhotorealistic}
-            currentTimeUTC={sunTime.toUTCString().slice(17, 22) + ' UTC'}
+            currentTimeUTC={`${sunTime.toUTCString().slice(17, 22)} UTC`}
             onDateTimeChange={setSunTime}
           />
-
         </div>
       </div>
 
@@ -354,8 +344,6 @@ export default function MissionPlannerWrapper() {
             sunTime={sunTime}
           />
         )}
-
-
       </div>
 
       {/* ✅ Modal rendered globally, not inside map logic */}
@@ -453,8 +441,6 @@ export default function MissionPlannerWrapper() {
             targets={targets}
           />
         </div>
-
-
       )}
       {isDesktop && (
         <div className="absolute right-0 top-0 bottom-0 z-9999 ">

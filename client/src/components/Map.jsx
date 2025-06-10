@@ -57,47 +57,46 @@ export default function MapComponent({
   console.log('🔄 Rendering drone with heading:', droneHeading)
 
   return (
-      <MapContainer
-        ref={ref}
-        center={startPosition}
-        zoom={3}
+    <MapContainer
+      ref={ref}
+      center={startPosition}
+      zoom={3}
+      maxZoom={22}
+      zoomControl={false}
+      scrollWheelZoom={true}
+      whenCreated={
+        (map) => console.log('Leaflet map created:', map) // ✅ Add this
+      } // bind map ref on creation
+      className="h-full w-full"
+    >
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution="&copy; OpenStreetMap contributors"
         maxZoom={22}
-        zoomControl={false}
-        scrollWheelZoom={true}
-        whenCreated={
-          (map) => console.log('Leaflet map created:', map) // ✅ Add this
-        } // bind map ref on creation
-        className='h-full w-full'
-      >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution="&copy; OpenStreetMap contributors"
-          maxZoom={22}
-        />
-        <WaypointManager
-          waypoints={waypoints}
-          setWaypoints={setWaypoints}
-          unitSystem={unitSystem}
-          terrainProvider={terrainProvider}
-          targets={targets}
-          setTargets={setTargets}
-          mapMode={mapMode}
-          setTargetPendingFocus={setTargetPendingFocus} // ✅ pass down
-          setShowTargetModal={setShowTargetModal} // ✅ pass down
-          onTargetClick={onTargetClick}
-          segmentSpeeds={segmentSpeeds}
-          setIsMobileCollapsed={setIsMobileCollapsed}
-          setExpandedSegmentId={setExpandedSegmentId}
-          isMobile={isMobile}
-          isDesktop={isDesktop}
-          setIsDesktopCollapsed={setIsDesktopCollapsed}
-          onClick={onClick}
-          onSelectSegment={onSelectSegment}
-        />
-        {dronePosition && (
-          <RotatingDroneMarker position={dronePosition} heading={droneHeading} icon={droneIcon} />
-        )}
-      </MapContainer>
-    
+      />
+      <WaypointManager
+        waypoints={waypoints}
+        setWaypoints={setWaypoints}
+        unitSystem={unitSystem}
+        terrainProvider={terrainProvider}
+        targets={targets}
+        setTargets={setTargets}
+        mapMode={mapMode}
+        setTargetPendingFocus={setTargetPendingFocus} // ✅ pass down
+        setShowTargetModal={setShowTargetModal} // ✅ pass down
+        onTargetClick={onTargetClick}
+        segmentSpeeds={segmentSpeeds}
+        setIsMobileCollapsed={setIsMobileCollapsed}
+        setExpandedSegmentId={setExpandedSegmentId}
+        isMobile={isMobile}
+        isDesktop={isDesktop}
+        setIsDesktopCollapsed={setIsDesktopCollapsed}
+        onClick={onClick}
+        onSelectSegment={onSelectSegment}
+      />
+      {dronePosition && (
+        <RotatingDroneMarker position={dronePosition} heading={droneHeading} icon={droneIcon} />
+      )}
+    </MapContainer>
   )
 }

@@ -31,7 +31,6 @@ export default function ModernStatusPillWrapper({
       waypoints={waypoints}
       segmentSpeeds={segmentSpeeds}
       unitSystem={unitSystem}
-      
     />
   )
 }

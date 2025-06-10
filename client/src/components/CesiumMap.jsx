@@ -15,11 +15,9 @@ import {
   Cartesian3,
   Matrix3,
   createWorldTerrainAsync,
-  createWorldImageryAsync
+  createWorldImageryAsync,
 } from 'cesium'
 import WaypointBillboardOverlay from './WaypointBillboardOverlay'
-import Layers from './Layers'
-import SunControlPanel from './SunControlPanel'
 import { recalculateHeadings } from '../utils/recalculateHeadings'
 import TargetEntity from './TargetEntity'
 
@@ -33,7 +31,7 @@ export default function CesiumMap({
   setTargets,
   overlayType,
   googlePhotorealistic,
-  sunTime
+  sunTime,
 }) {
   const viewerRef = useRef(null)
   const [viewer, setViewer] = useState(null)
@@ -232,15 +230,10 @@ export default function CesiumMap({
       handleSunDateTimeChange(sunTime)
     }
   }, [sunTime, viewer])
-  
-
 
   return (
     <div id="cesium map main div" className="relative w-full h-full bg-red-100">
       {console.trace('🟥 CesiumMap wrapper div rendered')}
-
-
-
 
       <Viewer
         ref={viewerRef}
@@ -259,15 +252,14 @@ export default function CesiumMap({
 
         {googlePhotorealistic ? (
           <Cesium3DTileset
-          key="google-tiles"
+            key="google-tiles"
             url={IonResource.fromAssetId(2275207)}
             onError={(e) => console.error('Google Tileset error', e)}
             onReady={(e) => console.log('Google Tileset loaded', e)}
           />
         ) : (
           <Cesium3DTileset
-          key="osm-tiles"
-
+            key="osm-tiles"
             url={IonResource.fromAssetId(96188)}
             onError={(e) => console.error('OSM Tileset error', e)}
             onReady={(e) => console.log('OSM Tileset loaded', e)}

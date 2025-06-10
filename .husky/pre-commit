@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+# Run client checks
+echo "📦 Running client checks..."
+cd client
+
+# Run linting
+echo "📝 Running ESLint..."
+npm run lint:check || (echo "❌ ESLint failed. Please fix the issues and try again." && exit 1)
+
+# Run prettier check
+echo "💅 Running Prettier check..."
+npm run prettier-check || (echo "❌ Prettier check failed. Please run 'npm run prettier' and try again." && exit 1)
+
+# Run tests
+echo "🧪 Running tests..."
+npm run test:coverage || (echo "❌ Tests failed. Please fix the failing tests and try again." && exit 1)
+
+echo "✅ All checks passed!" 
