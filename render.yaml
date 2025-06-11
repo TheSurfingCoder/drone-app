@@ -20,6 +20,20 @@ services:
       # - key: API_KEY
       #   sync: false 
 
+  - type: web
+    name: drone-planner
+    env: node
+    region: oregon
+    buildCommand: cd client && npm install && npm run build
+    startCommand: cd client && npm run preview
+    envVars:
+      - key: VITE_API_URL
+        value: https://drone-planner-api.onrender.com/api
+      - key: VITE_SUPABASE_URL
+        sync: false  # This will be set manually in Render dashboard
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false  # This will be set manually in Render dashboard
+
 databases:
   - name: drone-planner-db
     databaseName: drone_planner

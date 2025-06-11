@@ -15,6 +15,16 @@ import (
 	"drone-planner/server/handlers"
 )
 
+func init() {
+	// Load .env file only in development
+	if os.Getenv("GO_ENV") != "production" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Println("Error loading .env file:", err)
+		}
+	}
+}
+
 func main() {
 	// Load environment variables
 	env := os.Getenv("GO_ENV")
