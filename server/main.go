@@ -22,6 +22,11 @@ func init() {
 }
 
 func main() {
+	// Force production environment in Render
+	if os.Getenv("RENDER") == "true" {
+		os.Setenv("GO_ENV", "production")
+	}
+
 	// Log environment
 	env := os.Getenv("GO_ENV")
 	if env == "" {
@@ -29,10 +34,10 @@ func main() {
 	}
 	log.Printf("Running in %s environment", env)
 
-	// Load environment variables
-	if env != "production" {
+	// Load environment variables only in development
+	if env == "development" {
 		log.Println("Loading .env file for development environment")
-		if err := godotenv.Load(".env." + env); err != nil {
+		if err := godotenv.Load(".env.development"); err != nil {
 			log.Printf("Warning: Error loading .env file: %v", err)
 		}
 	} else {
