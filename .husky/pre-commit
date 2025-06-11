@@ -1,5 +1,12 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Check for .env files in the staging area, but allow .env.example
+if git diff --cached --name-only | grep -E '\.env($|\.[^e][^x][^a][^m][^p][^l][^e].*$)'; then
+  echo "Error: Attempting to commit .env files (except .env.example). These files should not be committed."
+  echo "Please remove them from your commit using: git reset HEAD <file>"
+  exit 1
+fi
 
 echo "🔍 Running pre-commit checks..."
 
