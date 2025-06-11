@@ -1,64 +1,92 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"drone-planner/server/handlers"
 )
 
 func main() {
-	// Get port from environment variable or use default
+	// Load environment variables
+	env := os.Getenv("GO_ENV")
+	if env == "" {
+		env = "development"
+	}
+	if err := godotenv.Load(".env." + env); err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	// Connect to MongoDB
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGODB_URI")))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer client.Disconnect(ctx)
+
+	// Ping the database
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Get database and collection
+	db := client.Database("drone_planner")
+	flightsCollection := db.Collection("flights")
+
+	// Create router
+	r := mux.NewRouter()
+
+	// Create handlers
+	flightHandler := handlers.NewFlightHandler(flightsCollection)
+
+	// API routes
+	api := r.PathPrefix("/api").Subrouter()
+
+	// Flight routes
+	api.HandleFunc("/flights", flightHandler.CreateFlight).Methods("POST")
+	api.HandleFunc("/flights", flightHandler.GetFlights).Methods("GET")
+	api.HandleFunc("/flights/{id}", flightHandler.GetFlight).Methods("GET")
+	api.HandleFunc("/flights/{id}", flightHandler.UpdateFlight).Methods("PUT")
+	api.HandleFunc("/flights/{id}", flightHandler.DeleteFlight).Methods("DELETE")
+
+	// Add CORS middleware
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", os.Getenv("FRONTEND_URL"))
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	})
+
+	// Add auth middleware
+	api.Use(handlers.AuthMiddleware)
+
+	// Start server
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
-	// Create a new mux router
-	mux := http.NewServeMux()
-
-	// Root endpoint
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{"message":"Drone Planner API is running","status":"ok","timestamp":"%s"}`, time.Now().Format(time.RFC3339))
-	})
-
-	// Health check endpoint
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{"status":"ok","timestamp":"%s"}`, time.Now().Format(time.RFC3339))
-	})
-
-	// Add CORS middleware
-	handler := corsMiddleware(mux)
-
-	// Start server
-	addr := fmt.Sprintf(":%s", port)
 	log.Printf("Server starting on port %s", port)
-	log.Fatal(http.ListenAndServe(addr, handler))
-}
-
-func corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Get the frontend URL from environment variable or use default
-		frontendURL := os.Getenv("FRONTEND_URL")
-		if frontendURL == "" {
-			frontendURL = "https://drone-app-q23f.vercel.app" // Default Vercel frontend URL
-		}
-
-		// Set CORS headers
-		w.Header().Set("Access-Control-Allow-Origin", frontendURL)
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-
-		// Handle preflight requests
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
+	log.Fatal(http.ListenAndServe(":"+port, r))
 }

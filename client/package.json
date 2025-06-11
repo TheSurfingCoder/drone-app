@@ -1,5 +1,6 @@
 {
   "name": "cesiumjs-vite-example",
+  "private": true,
   "version": "1.0.0",
   "description": "The minimal recommended setup for an app using Cesium with Vite.",
   "homepage": "https://cesium.com/platform/cesiumjs/",
@@ -20,10 +21,10 @@
   },
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "vite --mode development",
+    "build": "vite build --mode production",
     "preview": "vite preview",
-    "lint": "eslint \"src/**/*.{js,jsx}\" --fix",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "lint:check": "eslint \"src/**/*.{js,jsx}\" --cache --quiet",
     "prettier": "prettier --write \"**/*\"",
     "prettier-check": "prettier --check \"**/*\"",
@@ -58,6 +59,7 @@
     "vitest": "^3.2.3"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.50.0",
     "@turf/turf": "^7.2.0",
     "cesium": "^1.114.0",
     "leaflet": "^1.9.4",

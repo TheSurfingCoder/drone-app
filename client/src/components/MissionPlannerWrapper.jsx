@@ -13,6 +13,8 @@ import MobileWaypointPanel from './MobileWaypointPanel'
 import DesktopWaypointPanel from './DesktopWaypointPanel'
 import L from 'leaflet'
 import ModernStatusPillWrapper from './ModernStatusPillWrapper'
+import { useAuth } from '../contexts/AuthContext'
+import AuthModal from './AuthModal'
 
 export default function MissionPlannerWrapper() {
   const [viewMode, setViewMode] = useState('2d')
@@ -38,6 +40,8 @@ export default function MissionPlannerWrapper() {
   const hasAutoOpenedDesktopPanel = useRef(false) // tracks if we've already opened it
   const [googlePhotorealistic, setGooglePhotorealistic] = useState(true)
   const [sunTime, setSunTime] = useState(new Date())
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  const { user, signOut } = useAuth()
 
   const isDesktop = !isMobile
 
@@ -92,7 +96,7 @@ export default function MissionPlannerWrapper() {
       waypoints.length === 1 && // just added first
       isDesktop && // desktop only
       isDesktopCollapsed && // currently collapsed
-      !hasAutoOpenedDesktopPanel.current // hasn’t auto-opened yet
+      !hasAutoOpenedDesktopPanel.current // hasn't auto-opened yet
     ) {
       setIsDesktopCollapsed(false) // open the panel
       hasAutoOpenedDesktopPanel.current = true // mark it as opened
@@ -252,6 +256,14 @@ export default function MissionPlannerWrapper() {
         : Cartesian3.fromDegrees(wp.lng, wp.lat, (wp.groundHeight ?? 0) + (wp.height ?? 50)),
   }))
 
+  const handleAuthClick = () => {
+    if (user) {
+      signOut()
+    } else {
+      setIsAuthModalOpen(true)
+    }
+  }
+
   return (
     <div className=" relative w-screen h-screen ">
       {/* 🧭 Top Bar */}
@@ -280,12 +292,19 @@ export default function MissionPlannerWrapper() {
             droneHeading={droneHeading}
           />
         </div>
-        <div>
+        <div className="flex items-center space-x-4">
           <button
             className="bg-blue-600 text-white px-3 py-0 rounded text-xs sm:text-base"
             onClick={() => setViewMode(viewMode === '2d' ? '3d' : '2d')}
           >
             Switch to {viewMode === '2d' ? '3D' : '2D'}
+          </button>
+
+          <button
+            onClick={handleAuthClick}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            {user ? 'Sign Out' : 'Sign In'}
           </button>
         </div>
         <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-[49]">
@@ -467,6 +486,8 @@ export default function MissionPlannerWrapper() {
           />
         </div>
       )}
+
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </div>
   )
 }
