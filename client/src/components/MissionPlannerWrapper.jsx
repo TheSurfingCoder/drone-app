@@ -146,6 +146,12 @@ export default function MissionPlannerWrapper() {
     setSegmentSpeeds(newSpeeds)
   }
 
+  const handleWaypointHeightChange = (waypointId, newHeight) => {
+    setWaypoints((prev) =>
+      prev.map((wp) => (wp.id === waypointId ? { ...wp, height: newHeight } : wp)),
+    )
+  }
+
   const handleApplySpeedToAll = (newSpeed) => {
     const updated = segmentSpeeds.map((seg) => ({
       ...seg,
@@ -448,7 +454,7 @@ export default function MissionPlannerWrapper() {
             onDeleteWaypoint={handleDeleteWaypoint}
             setSelectedTargetId={setSelectedTargetId}
             setShowTargetModal={setShowTargetModal}
-            setIsMobileCollapsed={setIsMobileCollapsed} // new
+            setIsMobileCollapsed={setIsMobileCollapsed}
             onModeChange={setMapMode}
             isMobileCollapsed={isMobileCollapsed}
             expandedSegmentId={expandedSegmentId}
@@ -458,6 +464,8 @@ export default function MissionPlannerWrapper() {
             handleApplySpeedToAll={handleApplySpeedToAll}
             handleSelectSegment={handleSelectSegment}
             targets={targets}
+            handleWaypointHeightChange={handleWaypointHeightChange}
+            unitSystem={unitSystem}
           />
         </div>
       )}
@@ -483,6 +491,7 @@ export default function MissionPlannerWrapper() {
             onSelectSegment={handleSelectSegment}
             setSegmentSpeeds={setSegmentSpeeds}
             handleCurveTightnessChange={handleCurveTightnessChange}
+            handleWaypointHeightChange={handleWaypointHeightChange}
           />
         </div>
       )}

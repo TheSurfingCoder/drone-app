@@ -19,10 +19,38 @@ const MobileWaypointPanel = ({
   handleApplySpeedToAll,
   handleSelectSegment,
   targets,
+  handleWaypointHeightChange,
+  unitSystem,
 }) => {
   const waypointRefs = useRef({})
   const segmentRefs = useRef({})
   const [expandedPanel, setExpandedPanel] = useState(null)
+
+  // Conversion functions
+  const metersToFeet = (meters) => meters * 3.28084
+  const feetToMeters = (feet) => feet / 3.28084
+
+  // Convert height based on unit system
+  const convertHeight = (height) => {
+    if (unitSystem === 'imperial') {
+      return metersToFeet(height)
+    }
+    return height
+  }
+
+  // Convert height back to meters for storage
+  const convertHeightToMeters = (height) => {
+    if (unitSystem === 'imperial') {
+      return feetToMeters(height)
+    }
+    return height
+  }
+
+  // Get the appropriate unit label
+  const getUnitLabel = () => (unitSystem === 'imperial' ? 'ft' : 'm')
+
+  // Get max height based on unit system
+  const getMaxHeight = () => (unitSystem === 'imperial' ? 328 : 100) // 100m = ~328ft
 
   useEffect(() => {
     console.log('🚀 segmentSpeeds updated:', segmentSpeeds)
@@ -55,7 +83,8 @@ const MobileWaypointPanel = ({
   }, [selectedWaypoint, isMobileCollapsed])
 
   const getTotalElevation = (wp) => {
-    return (wp.groundHeight ?? 0) + (wp.height ?? 0)
+    const totalMeters = (wp.groundHeight ?? 0) + (wp.height ?? 0)
+    return unitSystem === 'imperial' ? metersToFeet(totalMeters) : totalMeters
   }
 
   const getSegmentSpeed = (fromId, toId) => {
@@ -173,32 +202,36 @@ const MobileWaypointPanel = ({
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-xs font-medium text-blue-700">Height</span>
                         <span className="font-bold text-blue-800 text-sm">
-                          {wp.height?.toFixed(1)} m
+                          {convertHeight(wp.height ?? 0).toFixed(1)} {getUnitLabel()}
                         </span>
                       </div>
                       <input
                         type="range"
                         min="0"
-                        max="100"
-                        step="0.5"
-                        value={wp.height}
+                        max={getMaxHeight()}
+                        step={unitSystem === 'imperial' ? '1' : '0.5'}
+                        value={convertHeight(wp.height ?? 0)}
                         onChange={(e) =>
-                          onUpdateWaypoint(wp.id, {
-                            height: parseFloat(e.target.value),
-                          })
+                          handleWaypointHeightChange(
+                            wp.id,
+                            convertHeightToMeters(parseFloat(e.target.value)),
+                          )
                         }
                         className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer slider"
                       />
                       <div className="flex justify-between text-[10px] text-blue-600 mt-1">
-                        <span>0m</span>
-                        <span>100m</span>
+                        <span>0{getUnitLabel()}</span>
+                        <span>
+                          {getMaxHeight()}
+                          {getUnitLabel()}
+                        </span>
                       </div>
                     </div>
                     <div className="bg-green-50 p-2 rounded-md border border-green-100">
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-medium text-green-700">Total Elevation</span>
                         <span className="font-bold text-green-800 text-sm">
-                          {getTotalElevation(wp).toFixed(1)} m
+                          {getTotalElevation(wp).toFixed(1)} {getUnitLabel()}
                         </span>
                       </div>
                     </div>

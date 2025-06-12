@@ -6,7 +6,6 @@ export default function DesktopWaypointPanel({
   waypoints,
   selectedWaypoint,
   onSelectWaypoint,
-  onUpdateWaypoint,
   onDeleteWaypoint,
   onModeChange,
   setSelectedTargetId,
@@ -21,8 +20,36 @@ export default function DesktopWaypointPanel({
   onSelectSegment,
   setSegmentSpeeds,
   handleCurveTightnessChange,
+  handleWaypointHeightChange,
+  unitSystem,
 }) {
   const segmentRefs = useRef({})
+
+  // Conversion functions
+  const metersToFeet = (meters) => meters * 3.28084
+  const feetToMeters = (feet) => feet / 3.28084
+
+  // Convert height based on unit system
+  const convertHeight = (height) => {
+    if (unitSystem === 'imperial') {
+      return metersToFeet(height)
+    }
+    return height
+  }
+
+  // Convert height back to meters for storage
+  const convertHeightToMeters = (height) => {
+    if (unitSystem === 'imperial') {
+      return feetToMeters(height)
+    }
+    return height
+  }
+
+  // Get the appropriate unit label
+  const getUnitLabel = () => (unitSystem === 'imperial' ? 'ft' : 'm')
+
+  // Get max height based on unit system
+  const getMaxHeight = () => (unitSystem === 'imperial' ? 328 : 100) // 100m = ~328ft
 
   useEffect(() => {
     if (expandedSegmentId && segmentRefs.current[expandedSegmentId]) {
@@ -40,7 +67,10 @@ export default function DesktopWaypointPanel({
     }
   }, [selectedWaypoint])
 
-  const getTotalElevation = (wp) => (wp.groundHeight ?? 0) + (wp.height ?? 0)
+  const getTotalElevation = (wp) => {
+    const totalMeters = (wp.groundHeight ?? 0) + (wp.height ?? 0)
+    return unitSystem === 'imperial' ? metersToFeet(totalMeters) : totalMeters
+  }
 
   const handleWaypointClick = (id) => {
     const el = document.getElementById(`waypoint-${id}`)
@@ -131,18 +161,21 @@ export default function DesktopWaypointPanel({
                 <div className="text-xs text-gray-600 mb-2">
                   <div className="flex justify-between mb-1">
                     <span>Height</span>
-                    <span>{wp.height?.toFixed(1)} m</span>
+                    <span>
+                      {convertHeight(wp.height).toFixed(1)} {getUnitLabel()}
+                    </span>
                   </div>
                   <input
                     type="range"
                     min="0"
-                    max="100"
-                    step="0.5"
-                    value={wp.height}
+                    max={getMaxHeight()}
+                    step={unitSystem === 'imperial' ? '1' : '0.5'}
+                    value={convertHeight(wp.height)}
                     onChange={(e) =>
-                      onUpdateWaypoint(wp.id, {
-                        height: parseFloat(e.target.value),
-                      })
+                      handleWaypointHeightChange(
+                        wp.id,
+                        convertHeightToMeters(parseFloat(e.target.value)),
+                      )
                     }
                     className="w-full"
                   />
@@ -152,7 +185,7 @@ export default function DesktopWaypointPanel({
                   <div className="flex justify-between">
                     <span>Total Elevation</span>
                     <span className="font-semibold text-green-800">
-                      {getTotalElevation(wp).toFixed(1)} m
+                      {getTotalElevation(wp).toFixed(1)} {getUnitLabel()}
                     </span>
                   </div>
                 </div>

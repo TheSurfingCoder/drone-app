@@ -7,6 +7,7 @@ import {
   Transforms,
   HeadingPitchRoll,
   Math as CesiumMath,
+  Cartesian3,
 } from 'cesium'
 import React from 'react'
 
@@ -14,16 +15,23 @@ export default function WaypointBillboardOverlay({ waypoints, sceneMode }) {
   return (
     <>
       {waypoints.map((wp, i) => {
+        // Recalculate elevatedPosition based on current height
+        const elevatedPosition = Cartesian3.fromDegrees(
+          wp.lng,
+          wp.lat,
+          (wp.groundHeight ?? 0) + (wp.height ?? 0),
+        )
+
         console.log(
           `Rendering waypoint ${i}: height = ${wp.height}, elevatedPosition =`,
-          wp.elevatedPosition,
+          elevatedPosition,
         )
         return (
           <React.Fragment key={i}>
             {/* Waypoint marker at elevated position */}
             <Entity
               name={`Waypoint ${i + 1}`}
-              position={wp.elevatedPosition}
+              position={elevatedPosition}
               point={{ pixelSize: 10, color: Color.YELLOW }}
               label={{
                 text: `WP ${i + 1}`,
@@ -35,11 +43,11 @@ export default function WaypointBillboardOverlay({ waypoints, sceneMode }) {
                 showBackground: true,
               }}
             />
-            {sceneMode === SceneMode.SCENE3D && wp.elevatedPosition && (
+            {sceneMode === SceneMode.SCENE3D && elevatedPosition && (
               <Entity
-                position={wp.elevatedPosition}
+                position={elevatedPosition}
                 orientation={Transforms.headingPitchRollQuaternion(
-                  wp.elevatedPosition,
+                  elevatedPosition,
                   new HeadingPitchRoll(
                     CesiumMath.toRadians((wp.heading ?? 0) - 90),
                     CesiumMath.toRadians(wp.pitch ?? 0),
@@ -74,7 +82,7 @@ export default function WaypointBillboardOverlay({ waypoints, sceneMode }) {
             {sceneMode === SceneMode.SCENE3D && (
               <Entity
                 polyline={{
-                  positions: [wp.groundPosition, wp.elevatedPosition],
+                  positions: [wp.groundPosition, elevatedPosition],
                   width: 2,
                   material: Color.ORANGE,
                 }}
