@@ -160,6 +160,15 @@ export default function DesktopWaypointPanel({
 
                 <div className="text-xs text-gray-600 mb-2">
                   <div className="flex justify-between mb-1">
+                    <span>Ground Height</span>
+                    <span>
+                      {convertHeight(wp.groundHeight ?? 0).toFixed(1)} {getUnitLabel()}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-xs text-gray-600 mb-2">
+                  <div className="flex justify-between mb-1">
                     <span>Height</span>
                     <span>
                       {convertHeight(wp.height).toFixed(1)} {getUnitLabel()}
@@ -195,6 +204,15 @@ export default function DesktopWaypointPanel({
                     <span>Heading</span>
                     <span className="font-mono">
                       {typeof wp.heading === 'number' ? `${wp.heading.toFixed(1)}°` : '—'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-xs text-gray-600 mb-2">
+                  <div className="flex justify-between">
+                    <span>Pitch</span>
+                    <span className="font-mono">
+                      {typeof wp.pitch === 'number' ? `${wp.pitch.toFixed(1)}°` : '—'}
                     </span>
                   </div>
                 </div>

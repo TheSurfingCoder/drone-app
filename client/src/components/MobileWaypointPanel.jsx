@@ -227,6 +227,16 @@ const MobileWaypointPanel = ({
                         </span>
                       </div>
                     </div>
+
+                    <div className="bg-blue-50 p-3 rounded-md border border-blue-100">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-medium text-blue-700">Ground Height</span>
+                        <span className="font-bold text-blue-800 text-sm">
+                          {convertHeight(wp.groundHeight ?? 0).toFixed(1)} {getUnitLabel()}
+                        </span>
+                      </div>
+                    </div>
+
                     <div className="bg-green-50 p-2 rounded-md border border-green-100">
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-medium text-green-700">Total Elevation</span>
@@ -274,6 +284,15 @@ const MobileWaypointPanel = ({
                         <span className="text-xs font-medium text-gray-600">Heading</span>
                         <span className="text-xs font-mono text-gray-800">
                           {typeof wp.heading === 'number' ? `${wp.heading.toFixed(1)}°` : '—'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 p-2 rounded-md border border-gray-200">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-medium text-gray-600">Pitch</span>
+                        <span className="text-xs font-mono text-gray-800">
+                          {typeof wp.pitch === 'number' ? `${wp.pitch.toFixed(1)}°` : '—'}
                         </span>
                       </div>
                     </div>
