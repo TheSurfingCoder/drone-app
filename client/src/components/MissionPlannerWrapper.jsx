@@ -15,6 +15,9 @@ import L from 'leaflet'
 import ModernStatusPillWrapper from './ModernStatusPillWrapper'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from './AuthModal'
+import { UserIcon } from 'lucide-react'
+import { DesktopFlightPanel } from './DesktopFlightPanel'
+import { MobileFlightPanel } from './MobileFlightPanel'
 
 export default function MissionPlannerWrapper() {
   const [viewMode, setViewMode] = useState('2d')
@@ -41,7 +44,8 @@ export default function MissionPlannerWrapper() {
   const [googlePhotorealistic, setGooglePhotorealistic] = useState(true)
   const [sunTime, setSunTime] = useState(new Date())
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
+  const [showFlights, setShowFlights] = useState(false)
 
   const isDesktop = !isMobile
 
@@ -264,11 +268,65 @@ export default function MissionPlannerWrapper() {
 
   const handleAuthClick = () => {
     if (user) {
-      signOut()
+      setShowFlights(true)
     } else {
       setIsAuthModalOpen(true)
     }
   }
+
+  // Sample flights data - replace with actual data from your backend
+  const flights = [
+    {
+      id: 1,
+      name: 'City Center Survey',
+      date: '2024-01-15',
+      duration: '1h 45m',
+      distance: '12.5',
+      waypoints: 8,
+      thumbnail:
+        'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=300&h=200',
+    },
+    {
+      id: 2,
+      name: 'Harbor Inspection',
+      date: '2024-01-14',
+      duration: '2h 15m',
+      distance: '15.2',
+      waypoints: 12,
+      thumbnail:
+        'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?auto=format&fit=crop&w=300&h=200',
+    },
+    {
+      id: 2,
+      name: 'Harbor Inspection',
+      date: '2024-01-14',
+      duration: '2h 15m',
+      distance: '15.2',
+      waypoints: 12,
+      thumbnail:
+        'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?auto=format&fit=crop&w=300&h=200',
+    },
+    {
+      id: 2,
+      name: 'Harbor Inspection',
+      date: '2024-01-14',
+      duration: '2h 15m',
+      distance: '15.2',
+      waypoints: 12,
+      thumbnail:
+        'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?auto=format&fit=crop&w=300&h=200',
+    },
+    {
+      id: 2,
+      name: 'Harbor Inspection',
+      date: '2024-01-14',
+      duration: '2h 15m',
+      distance: '15.2',
+      waypoints: 12,
+      thumbnail:
+        'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?auto=format&fit=crop&w=300&h=200',
+    },
+  ]
 
   return (
     <div className=" relative w-screen h-screen ">
@@ -306,12 +364,24 @@ export default function MissionPlannerWrapper() {
             Switch to {viewMode === '2d' ? '3D' : '2D'}
           </button>
 
-          <button
-            onClick={handleAuthClick}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            {user ? 'Sign Out' : 'Sign In'}
-          </button>
+          {!user && (
+            <button
+              onClick={handleAuthClick}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Sign In
+            </button>
+          )}
+          {user && (
+            <button
+              onClick={handleAuthClick}
+              className="flex items-center border rounded-full px-3 py-1 hover:bg-gray-50 text-xs sm:text-base space-x-2"
+            >
+              {/* Only show icon on sm and up */}
+              <UserIcon size={16} className="text-gray-600  sm:inline-block" />
+              <span>My Flights</span>
+            </button>
+          )}
         </div>
         <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-[49]">
           <ModernStatusPillWrapper
@@ -494,6 +564,14 @@ export default function MissionPlannerWrapper() {
             handleWaypointHeightChange={handleWaypointHeightChange}
           />
         </div>
+      )}
+
+      {/* Flight Panels */}
+      {showFlights && isMobile && (
+        <MobileFlightPanel onClose={() => setShowFlights(false)} flights={flights} />
+      )}
+      {showFlights && !isMobile && (
+        <DesktopFlightPanel onClose={() => setShowFlights(false)} flights={flights} />
       )}
 
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
