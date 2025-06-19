@@ -1,15 +1,13 @@
 services:
   - type: web
+    runtime: go
     name: drone-planner-api
-    env: go
     region: oregon
     buildCommand: cd server && go mod download && go build -o drone-planner-server
     startCommand: cd server && ./drone-planner-server
     envVars:
-      - key: GO_VERSION
-        value: 1.24.0
       - key: FRONTEND_URL
-        value: https://drone-planner.onrender.com
+        value: https://drone-app-q23f.vercel.app
       - key: MONGODB_URI
         sync: false  # Set manually in Render dashboard
       - key: SUPABASE_JWT_SECRET
@@ -17,23 +15,3 @@ services:
       # Add other environment variables as needed
       # - key: API_KEY
       #   sync: false 
-
-  - type: static
-    name: drone-planner
-    env: node
-    region: oregon
-    buildCommand: cd client && npm install && npm run build
-    staticPublishPath: client/dist
-    envVars:
-      - key: VITE_API_URL
-        value: https://drone-planner-api.onrender.com/api
-      - key: VITE_SUPABASE_URL
-        sync: false  # Set manually in Render dashboard
-      - key: VITE_SUPABASE_ANON_KEY
-        sync: false  # Set manually in Render dashboard
-
-databases:
-  - name: drone-planner-db
-    databaseName: drone_planner
-    plan: free
-    region: oregon 

@@ -18,6 +18,11 @@ import AuthModal from './AuthModal'
 import { UserIcon } from 'lucide-react'
 import { DesktopFlightPanel } from './DesktopFlightPanel'
 import { MobileFlightPanel } from './MobileFlightPanel'
+import { calculateDistance, estimateDuration } from '../utils/distanceUtils'
+import SaveFlightModal from './SaveFlightModal'
+import { supabase } from '../lib/supabase'
+
+// Add flight data structure
 
 export default function MissionPlannerWrapper() {
   const [viewMode, setViewMode] = useState('2d')
@@ -46,9 +51,9 @@ export default function MissionPlannerWrapper() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const { user } = useAuth()
   const [showFlights, setShowFlights] = useState(false)
-
+  const [savedFlights, setSavedFlights] = useState([])
+  const [showSaveModal, setShowSaveModal] = useState(false)
   const isDesktop = !isMobile
-
   const [droneHeading, setDroneHeading] = useState(0)
   const droneHeadingRef = useRef(0)
 
@@ -266,67 +271,276 @@ export default function MissionPlannerWrapper() {
         : Cartesian3.fromDegrees(wp.lng, wp.lat, (wp.groundHeight ?? 0) + (wp.height ?? 50)),
   }))
 
+  // Add fetchFlights function
+  const fetchFlights = async () => {
+    if (!user) {
+      console.log('No user, skipping fetchFlights')
+      return
+    }
+
+    try {
+      console.log('Fetching flights for user:', user.id)
+
+      // Get the current session
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession()
+      if (sessionError) {
+        console.error('Session error:', sessionError)
+        throw sessionError
+      }
+      if (!session) {
+        console.error('No active session')
+        throw new Error('No active session')
+      }
+
+      console.log('Making request to /api/flights')
+      const response = await fetch('/api/flights', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      })
+
+      if (!response.ok) {
+        console.error('Response not OK:', response.status, response.statusText)
+        throw new Error(`Failed to fetch flights: ${response.status} ${response.statusText}`)
+      }
+
+      const flights = await response.json()
+      console.log('Fetched flights:', flights)
+
+      if (!Array.isArray(flights)) {
+        console.error('Expected array of flights, got:', typeof flights)
+        return
+      }
+
+      console.log(`Setting ${flights.length} flights in state`)
+      setSavedFlights(flights)
+    } catch (error) {
+      console.error('Error fetching flights:', error)
+    }
+  }
+
+  // Fetch flights when user signs in
+  useEffect(() => {
+    if (user) {
+      fetchFlights()
+    }
+  }, [user])
+
   const handleAuthClick = () => {
     if (user) {
+      fetchFlights() // Fetch flights when opening the panel
       setShowFlights(true)
     } else {
       setIsAuthModalOpen(true)
     }
   }
 
-  // Sample flights data - replace with actual data from your backend
-  const flights = [
-    {
-      id: 1,
-      name: 'City Center Survey',
-      date: '2024-01-15',
-      duration: '1h 45m',
-      distance: '12.5',
-      waypoints: 8,
-      thumbnail:
-        'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=300&h=200',
-    },
-    {
-      id: 2,
-      name: 'Harbor Inspection',
-      date: '2024-01-14',
-      duration: '2h 15m',
-      distance: '15.2',
-      waypoints: 12,
-      thumbnail:
-        'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?auto=format&fit=crop&w=300&h=200',
-    },
-    {
-      id: 2,
-      name: 'Harbor Inspection',
-      date: '2024-01-14',
-      duration: '2h 15m',
-      distance: '15.2',
-      waypoints: 12,
-      thumbnail:
-        'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?auto=format&fit=crop&w=300&h=200',
-    },
-    {
-      id: 2,
-      name: 'Harbor Inspection',
-      date: '2024-01-14',
-      duration: '2h 15m',
-      distance: '15.2',
-      waypoints: 12,
-      thumbnail:
-        'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?auto=format&fit=crop&w=300&h=200',
-    },
-    {
-      id: 2,
-      name: 'Harbor Inspection',
-      date: '2024-01-14',
-      duration: '2h 15m',
-      distance: '15.2',
-      waypoints: 12,
-      thumbnail:
-        'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?auto=format&fit=crop&w=300&h=200',
-    },
-  ]
+  // Create flight data function (moved up to fix ESLint error)
+  const createFlightData = (waypoints, segmentSpeeds, name) => {
+    console.log('Raw waypoints:', waypoints) // Debug log
+
+    // Convert Cesium waypoints to plain objects
+    const serializedWaypoints = waypoints
+      .map((wp, index) => {
+        // Debug log for each waypoint
+        console.log(`Processing waypoint ${index}:`, wp)
+
+        // Safety check for required properties
+        if (typeof wp.lat === 'undefined' || typeof wp.lng === 'undefined') {
+          console.error(`Waypoint ${index} is missing lat/lng:`, wp)
+          return null
+        }
+
+        return {
+          coordinate: {
+            latitude: wp.lat,
+            longitude: wp.lng,
+          },
+          altitude: wp.height || 0,
+          heading: wp.heading || 0,
+          gimbalPitch: wp.pitch || 0,
+          speed: segmentSpeeds.find((s) => s.toId === wp.id)?.speed || 5, // Get speed from segmentSpeeds array
+          turnMode: 'CLOCKWISE',
+          actions: [],
+        }
+      })
+      .filter((wp) => wp !== null) // Remove any null waypoints
+
+    // Calculate total distance and duration
+    const totalDistance = calculateDistance(waypoints)
+    const estimatedDuration = estimateDuration(totalDistance, segmentSpeeds)
+
+    const flightData = {
+      name,
+      date: new Date().toISOString(),
+      waypoints: serializedWaypoints,
+      segmentSpeeds: segmentSpeeds || [],
+      metadata: {
+        totalWaypoints: waypoints.length,
+        totalDistance,
+        estimatedDuration,
+      },
+      // DJI SDK specific fields
+      missionType: 'WAYPOINT',
+      maxFlightSpeed: 15,
+      autoFlightSpeed: 10,
+      finishedAction: 'GO_HOME',
+      headingHome: 'TOWARD_POINT_OF_INTEREST',
+      flightpathMode: 'NORMAL',
+      repeatTimes: 1,
+      turnMode: 'CLOCKWISE',
+      actions: [],
+    }
+
+    // Debug log the final flight data
+    console.log('Created flight data:', flightData)
+
+    return flightData
+  }
+
+  const handleSaveFlight = async (name) => {
+    if (!user) {
+      setIsAuthModalOpen(true)
+      return
+    }
+
+    if (!waypoints || waypoints.length < 2) {
+      console.log('Please add at least 2 waypoints before saving')
+      return
+    }
+
+    try {
+      // Get the current session
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
+      if (!session) throw new Error('No active session')
+
+      const flightData = createFlightData(waypoints, segmentSpeeds, name)
+
+      // Log the request data
+      console.log('Sending flight data:', JSON.stringify(flightData, null, 2))
+
+      const response = await fetch('/api/flights', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(flightData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Server error response:', errorData)
+        throw new Error(
+          errorData.message || `Failed to save flight: ${response.status} ${response.statusText}`,
+        )
+      }
+
+      const savedFlight = await response.json()
+      setSavedFlights((prev) => [...prev, savedFlight])
+      console.log('Flight saved successfully!')
+    } catch (error) {
+      console.error('Error saving flight:', error)
+      console.log(error.message || 'Failed to save flight. Please try again.')
+    }
+  }
+
+  // Add load flight function
+  const handleLoadFlight = (flight) => {
+    console.log('Loading flight:', flight) // Debug log
+
+    // Convert saved flight data back to Cesium objects
+    const loadedWaypoints = flight.waypoints.map((wp) => {
+      console.log('Processing waypoint:', wp) // Debug log
+
+      const waypoint = {
+        id: Date.now() + Math.random(), // Generate new ID
+        lat: wp.coordinate.latitude,
+        lng: wp.coordinate.longitude,
+        height: wp.altitude,
+        heading: wp.heading,
+        pitch: wp.gimbalPitch,
+        speed: wp.speed,
+        turnMode: wp.turnMode,
+        actions: wp.actions || [],
+      }
+
+      // Add Cesium positions
+      waypoint.groundPosition = Cartesian3.fromDegrees(
+        waypoint.lng,
+        waypoint.lat,
+        0, // Ground height
+      )
+      waypoint.elevatedPosition = Cartesian3.fromDegrees(
+        waypoint.lng,
+        waypoint.lat,
+        waypoint.height,
+      )
+
+      console.log('Created waypoint:', waypoint) // Debug log
+      return waypoint
+    })
+
+    console.log('Loaded waypoints:', loadedWaypoints) // Debug log
+    setWaypoints(loadedWaypoints)
+    setSegmentSpeeds(flight.segmentSpeeds)
+    setShowFlights(false)
+  }
+
+  // Add handleDeleteFlight function
+  const handleDeleteFlight = async (flightId) => {
+    if (!user) {
+      setIsAuthModalOpen(true)
+      return
+    }
+
+    try {
+      // Get the current session
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
+      if (!session) throw new Error('No active session')
+
+      const response = await fetch(`/api/flights/${flightId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete flight: ${response.status} ${response.statusText}`)
+      }
+
+      // Remove the flight from state
+      setSavedFlights((prev) => prev.filter((flight) => flight.id !== flightId))
+      console.log('Flight deleted successfully!')
+    } catch (error) {
+      console.error('Error deleting flight:', error)
+      console.log(error.message || 'Failed to delete flight. Please try again.')
+    }
+  }
+
+  // Add handleSignOut function
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      setShowFlights(false)
+    } catch (error) {
+      console.error('Error signing out:', error)
+      console.log('Error signing out. Please try again.')
+    }
+  }
 
   return (
     <div className=" relative w-screen h-screen ">
@@ -513,7 +727,12 @@ export default function MissionPlannerWrapper() {
       )}
 
       {/* 📍 Floating Panels */}
-      <QuickAccessToolbar isMobile={isMobile} onModeChange={setMapMode} currentMode={mapMode} />
+      <QuickAccessToolbar
+        isMobile={isMobile}
+        onModeChange={setMapMode}
+        currentMode={mapMode}
+        onSave={() => setShowSaveModal(true)}
+      />
       {isMobile && (
         <div className="fixed bottom-0 left-0 right-0 z-999">
           <MobileWaypointPanel
@@ -568,13 +787,31 @@ export default function MissionPlannerWrapper() {
 
       {/* Flight Panels */}
       {showFlights && isMobile && (
-        <MobileFlightPanel onClose={() => setShowFlights(false)} flights={flights} />
+        <MobileFlightPanel
+          onClose={() => setShowFlights(false)}
+          flights={savedFlights}
+          onLoadFlight={handleLoadFlight}
+          onDeleteFlight={handleDeleteFlight}
+          onSignOut={handleSignOut}
+        />
       )}
       {showFlights && !isMobile && (
-        <DesktopFlightPanel onClose={() => setShowFlights(false)} flights={flights} />
+        <DesktopFlightPanel
+          onClose={() => setShowFlights(false)}
+          flights={savedFlights}
+          onLoadFlight={handleLoadFlight}
+          onDeleteFlight={handleDeleteFlight}
+          onSignOut={handleSignOut}
+        />
       )}
 
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+
+      <SaveFlightModal
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        onSave={handleSaveFlight}
+      />
     </div>
   )
 }

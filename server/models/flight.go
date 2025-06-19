@@ -8,72 +8,87 @@ import (
 
 // Flight represents a saved flight plan
 type Flight struct {
-	ID            primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	UserID        string             `json:"userId" bson:"userId"`
-	Name          string             `json:"name" bson:"name"`
-	Description   string             `json:"description" bson:"description"`
-	Waypoints     []Waypoint         `json:"waypoints" bson:"waypoints"`
-	Targets       []Target           `json:"targets" bson:"targets"`
-	SegmentSpeeds []SegmentSpeed     `json:"segmentSpeeds" bson:"segmentSpeeds"`
-	CreatedAt     time.Time          `json:"createdAt" bson:"createdAt"`
-	UpdatedAt     time.Time          `json:"updatedAt" bson:"updatedAt"`
-}
-
-// NewFlight creates a new flight plan
-func NewFlight(userID string, name, description string) *Flight {
-	now := time.Now()
-	return &Flight{
-		UserID:      userID,
-		Name:        name,
-		Description: description,
-		CreatedAt:   now,
-		UpdatedAt:   now,
-	}
-}
-
-// ToJSON returns a map representation of the flight suitable for JSON
-func (f *Flight) ToJSON() map[string]interface{} {
-	return map[string]interface{}{
-		"id":            f.ID.Hex(),
-		"userId":        f.UserID,
-		"name":          f.Name,
-		"description":   f.Description,
-		"waypoints":     f.Waypoints,
-		"targets":       f.Targets,
-		"segmentSpeeds": f.SegmentSpeeds,
-		"createdAt":     f.CreatedAt,
-		"updatedAt":     f.UpdatedAt,
-	}
+	ID              primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	UserID          string             `bson:"user_id" json:"userId"`
+	Name            string             `bson:"name" json:"name"`
+	Date            time.Time          `bson:"date" json:"date"`
+	Waypoints       []Waypoint         `bson:"waypoints" json:"waypoints"`
+	SegmentSpeeds   []SegmentSpeed     `bson:"segment_speeds" json:"segmentSpeeds"`
+	Metadata        FlightMetadata     `bson:"metadata" json:"metadata"`
+	MissionType     string             `bson:"mission_type" json:"missionType"`
+	MaxFlightSpeed  float64            `bson:"max_flight_speed" json:"maxFlightSpeed"`
+	AutoFlightSpeed float64            `bson:"auto_flight_speed" json:"autoFlightSpeed"`
+	FinishedAction  string             `bson:"finished_action" json:"finishedAction"`
+	HeadingHome     string             `bson:"heading_home" json:"headingHome"`
+	FlightpathMode  string             `bson:"flightpath_mode" json:"flightpathMode"`
+	RepeatTimes     int                `bson:"repeat_times" json:"repeatTimes"`
+	TurnMode        string             `bson:"turn_mode" json:"turnMode"`
+	Actions         []Action           `bson:"actions" json:"actions"`
+	CreatedAt       time.Time          `bson:"created_at" json:"createdAt"`
+	UpdatedAt       time.Time          `bson:"updated_at" json:"updatedAt"`
 }
 
 // Waypoint represents a point in the flight path
 type Waypoint struct {
-	ID            string  `json:"id" bson:"id"`
-	Lat           float64 `json:"lat" bson:"lat"`
-	Lng           float64 `json:"lng" bson:"lng"`
-	Height        float64 `json:"height" bson:"height"`
-	GroundHeight  float64 `json:"groundHeight" bson:"groundHeight"`
-	Heading       float64 `json:"heading" bson:"heading"`
-	Pitch         float64 `json:"pitch" bson:"pitch"`
-	Roll          float64 `json:"roll" bson:"roll"`
-	FocusTargetId string  `json:"focusTargetId" bson:"focusTargetId"`
+	Coordinate  Coordinate `json:"coordinate" bson:"coordinate"`
+	Altitude    float64    `json:"altitude" bson:"altitude"`
+	Heading     float64    `json:"heading" bson:"heading"`
+	GimbalPitch float64    `json:"gimbalPitch" bson:"gimbalPitch"`
+	Speed       float64    `json:"speed" bson:"speed"`
+	TurnMode    string     `json:"turnMode" bson:"turnMode"`
+	Actions     []Action   `json:"actions" bson:"actions"`
 }
 
-// Target represents a target point
-type Target struct {
-	ID           string  `json:"id" bson:"id"`
-	Lat          float64 `json:"lat" bson:"lat"`
-	Lng          float64 `json:"lng" bson:"lng"`
-	Height       float64 `json:"height" bson:"height"`
-	GroundHeight float64 `json:"groundHeight" bson:"groundHeight"`
+// Coordinate represents a 2D position
+type Coordinate struct {
+	Latitude  float64 `json:"latitude" bson:"latitude"`
+	Longitude float64 `json:"longitude" bson:"longitude"`
 }
 
-// SegmentSpeed represents speed settings for a flight segment
+// Action represents a waypoint action
+type Action struct {
+	ActionType  string  `json:"actionType" bson:"actionType"`
+	ActionParam float64 `json:"actionParam" bson:"actionParam"`
+}
+
+// FlightMetadata contains calculated flight information
+type FlightMetadata struct {
+	TotalWaypoints    int     `json:"totalWaypoints" bson:"totalWaypoints"`
+	TotalDistance     float64 `json:"totalDistance" bson:"totalDistance"`
+	EstimatedDuration float64 `json:"estimatedDuration" bson:"estimatedDuration"`
+}
+
+// SegmentSpeed represents the speed settings between two waypoints
 type SegmentSpeed struct {
-	FromId             string  `json:"fromId" bson:"fromId"`
-	ToId               string  `json:"toId" bson:"toId"`
-	Speed              float64 `json:"speed" bson:"speed"`
-	InterpolateHeading bool    `json:"interpolateHeading" bson:"interpolateHeading"`
-	IsCurved           bool    `json:"isCurved" bson:"isCurved"`
-	CurveTightness     float64 `json:"curveTightness" bson:"curveTightness"`
+	FromID             int64   `bson:"from_id" json:"fromId"`
+	ToID               int64   `bson:"to_id" json:"toId"`
+	Speed              float64 `bson:"speed" json:"speed"`
+	InterpolateHeading bool    `bson:"interpolate_heading" json:"interpolateHeading"`
+	IsCurved           bool    `bson:"is_curved" json:"isCurved"`
+	CurveTightness     int     `bson:"curve_tightness" json:"curveTightness"`
+}
+
+
+// ToJSON returns a map representation of the flight suitable for JSON
+func (f *Flight) ToJSON() map[string]interface{} {
+	return map[string]interface{}{
+		"id":              f.ID.Hex(),
+		"userId":          f.UserID,
+		"name":            f.Name,
+		"date":            f.Date,
+		"waypoints":       f.Waypoints,
+		"segmentSpeeds":   f.SegmentSpeeds,
+		"metadata":        f.Metadata,
+		"createdAt":       f.CreatedAt,
+		"updatedAt":       f.UpdatedAt,
+		"missionType":     f.MissionType,
+		"maxFlightSpeed":  f.MaxFlightSpeed,
+		"autoFlightSpeed": f.AutoFlightSpeed,
+		"finishedAction":  f.FinishedAction,
+		"headingHome":     f.HeadingHome,
+		"flightpathMode":  f.FlightpathMode,
+		"repeatTimes":     f.RepeatTimes,
+		"turnMode":        f.TurnMode,
+		"actions":         f.Actions,
+	}
 }

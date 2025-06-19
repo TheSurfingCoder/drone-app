@@ -16,9 +16,15 @@ import (
 	"drone-planner/server/handlers"
 )
 
-func init() {
-	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-	log.Println("Starting application initialization...")
+// responseWriter is a custom response writer that captures the status code
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
 }
 
 func main() {
@@ -26,6 +32,11 @@ func main() {
 	if os.Getenv("RENDER") == "true" {
 		os.Setenv("GO_ENV", "production")
 	}
+
+	// Configure logging
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+	log.SetOutput(os.Stdout)
+	log.Println("Starting application initialization...")
 
 	// Log environment
 	env := os.Getenv("GO_ENV")
@@ -129,9 +140,39 @@ func main() {
 	})
 	log.Println("CORS middleware configured")
 
+	// Add panic recovery middleware
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer func() {
+				if err := recover(); err != nil {
+					log.Printf("Recovered from panic: %v", err)
+					http.Error(w, "Internal server error", http.StatusInternalServerError)
+				}
+			}()
+			next.ServeHTTP(w, r)
+		})
+	})
+	
+
 	// Add auth middleware
 	api.Use(handlers.AuthMiddleware)
 	log.Println("Auth middleware configured")
+
+	// Add request logging middleware
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
+			log.Printf("Started %s %s", r.Method, r.URL.Path)
+
+			// Create a custom response writer to capture the status code
+			rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+
+			next.ServeHTTP(rw, r)
+
+			duration := time.Since(start)
+			log.Printf("Completed %s %s %d %s in %v", r.Method, r.URL.Path, rw.statusCode, http.StatusText(rw.statusCode), duration)
+		})
+	})
 
 	// Start server
 	port := os.Getenv("PORT")
@@ -139,10 +180,10 @@ func main() {
 		port = "8080"
 	}
 
-	log.Printf("Server starting on port %s", port)
-	log.Printf("Frontend URL: %s", os.Getenv("FRONTEND_URL"))
-	log.Printf("MongoDB connected: %s", mongoURI)
-	log.Printf("Supabase JWT secret configured: %v", os.Getenv("SUPABASE_JWT_SECRET") != "")
+
+	log.Printf("Frontend URL esttablished")
+	log.Printf("MongoDB connected")
+	log.Printf("Supabase JWT secret configured")
 
 	// Add a health check endpoint
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -151,5 +192,17 @@ func main() {
 	}).Methods("GET")
 	log.Println("Health check endpoint added")
 
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	srv := &http.Server{
+		Addr:         ":" + port,
+		Handler:      r,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+	
+	log.Printf("Server starting on port %s", port)
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("Server error: %v", err)
+	}	
+	
 }

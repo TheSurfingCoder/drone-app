@@ -1,7 +1,13 @@
 import React from 'react'
 import { DownloadIcon, UploadIcon, MapPinIcon, TargetIcon } from 'lucide-react'
 
-export default function QuickAccessToolbar({ isMobile, isCompactMode, onModeChange, currentMode }) {
+export default function QuickAccessToolbar({
+  isMobile,
+  isCompactMode,
+  onModeChange,
+  currentMode,
+  onSave,
+}) {
   const isTargetMode = currentMode === 'target'
 
   const handleFileImport = () => {
@@ -9,7 +15,9 @@ export default function QuickAccessToolbar({ isMobile, isCompactMode, onModeChan
   }
 
   const handleFileExport = () => {
-    console.log('Export file clicked')
+    if (onSave) {
+      onSave()
+    }
   }
 
   const toggleMode = (mode) => {
@@ -44,6 +52,7 @@ export default function QuickAccessToolbar({ isMobile, isCompactMode, onModeChan
       <span className="text-[10px] leading-tight mt-0.5 text-center">{label}</span>
     </button>
   )
+
   return (
     <div className="fixed left-0 top-1/2 -translate-y-1/2 bg-white rounded-r-lg shadow-lg p-2 flex flex-col items-center space-y-3">
       <ModeToggle />
