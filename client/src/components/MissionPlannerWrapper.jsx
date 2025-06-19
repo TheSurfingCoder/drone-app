@@ -4,7 +4,7 @@ import CesiumMap from './CesiumMap'
 import UnitToggle from './UnitToggle'
 import DroneController from './DroneController'
 import CurrentLocationButton from './CurrentLocationButton'
-import { Cartesian3 } from 'cesium'
+import { Cartesian3, HeadingPitchRange } from 'cesium'
 import QuickAccessToolbar from './QuickAccessToolbar'
 import TargetWaypointModal from './TargetWayPointModal'
 import { recalculateHeadings } from '../utils/recalculateHeadings'
@@ -178,7 +178,10 @@ export default function MissionPlannerWrapper() {
     setSelectedWaypoint(id)
 
     const wp = waypoints.find((w) => w.id === id)
-    if (wp && mapRef.current) {
+    if (!wp) return
+
+    // Handle 2D map view
+    if (viewMode === '2d' && mapRef.current) {
       const map = mapRef.current
       const currentZoom = map.getZoom()
       const targetZoom = currentZoom < 19 ? 19 : currentZoom
@@ -189,6 +192,33 @@ export default function MissionPlannerWrapper() {
       const targetLatLng = map.unproject(newPoint, targetZoom)
 
       map.setView(targetLatLng, targetZoom)
+    }
+
+    // Handle 3D Cesium view
+    if (viewMode === '3d' && viewerRef.current?.cesiumElement) {
+      const viewer = viewerRef.current.cesiumElement
+
+      // Find the waypoint entity by name
+      const waypointIndex = waypoints.findIndex((w) => w.id === wp.id)
+      const waypointEntity = viewer.entities.values.find(
+        (entity) => entity.name === `Waypoint ${waypointIndex + 1}`,
+      )
+
+      if (waypointEntity) {
+        // Convert waypoint heading to radians for Cesium
+        const headingRad = ((wp.heading || 0) * Math.PI) / 180
+
+        // Fly to the waypoint entity with the waypoint's heading
+        viewer.flyTo(waypointEntity, {
+          offset: new HeadingPitchRange(
+            headingRad, // Use waypoint's heading
+            -0.4, // pitch (look down slightly)
+            100, // distance in meters
+          ),
+        })
+      } else {
+        console.warn('Waypoint entity not found for:', wp.id)
+      }
     }
   }
 
