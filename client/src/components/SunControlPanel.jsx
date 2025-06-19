@@ -1,10 +1,22 @@
 import React, { useState } from 'react'
 import { DateTime } from 'luxon'
 
-export default function SunControlPanel({ onDateTimeChange }) {
-  const [date, setDate] = useState('2023-07-01')
-  const [time, setTime] = useState('12:00')
-  const [timezone, setTimezone] = useState('UTC')
+export default function SunControlPanel({
+  currentDate,
+  currentTime,
+  currentTimezone,
+  onDateTimeChange,
+}) {
+  const [date, setDate] = useState(currentDate)
+  const [time, setTime] = useState(currentTime)
+  const [timezone, setTimezone] = useState(currentTimezone)
+
+  // Update local state when props change
+  React.useEffect(() => {
+    setDate(currentDate)
+    setTime(currentTime)
+    setTimezone(currentTimezone)
+  }, [currentDate, currentTime, currentTimezone])
 
   const handleChange = (d, t, tz) => {
     const dt = DateTime.fromISO(`${d}T${t}`, { zone: tz })
@@ -13,7 +25,7 @@ export default function SunControlPanel({ onDateTimeChange }) {
       const utcDate = dt.toUTC().toJSDate()
       console.log('🕒 Luxon UTC DateTime:', dt.toUTC().toISO())
       console.log('🕒 UTC JS Date passed to Cesium:', utcDate.toISOString())
-      onDateTimeChange(utcDate)
+      onDateTimeChange(d, t, tz)
     }
   }
 

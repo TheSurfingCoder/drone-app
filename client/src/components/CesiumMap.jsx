@@ -33,6 +33,7 @@ export default function CesiumMap({
   overlayType,
   googlePhotorealistic,
   sunTime,
+  onCameraPositionChange,
 }) {
   const viewerRef = useRef(null)
   const [viewer, setViewer] = useState(null)
@@ -231,6 +232,33 @@ export default function CesiumMap({
       handleSunDateTimeChange(sunTime)
     }
   }, [sunTime, viewer])
+
+  // Camera position tracking
+  useEffect(() => {
+    if (!viewer || !onCameraPositionChange) return
+
+    const handleCameraMove = () => {
+      const camera = viewer.camera
+      const position = camera.position
+      const cartographic = Cartographic.fromCartesian(position)
+
+      const lat = CesiumMath.toDegrees(cartographic.latitude)
+      const lng = CesiumMath.toDegrees(cartographic.longitude)
+      const altitude = cartographic.height
+
+      // Only update timezone if camera is within 2000 meters of ground
+      if (altitude < 2000) {
+        onCameraPositionChange({ lat, lng, altitude })
+      }
+    }
+
+    // Listen for camera move events
+    viewer.camera.moveEnd.addEventListener(handleCameraMove)
+
+    return () => {
+      viewer.camera.moveEnd.removeEventListener(handleCameraMove)
+    }
+  }, [viewer, onCameraPositionChange])
 
   return (
     <div id="cesium map main div" className="relative w-full h-full bg-red-100">

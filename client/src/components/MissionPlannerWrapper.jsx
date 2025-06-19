@@ -21,6 +21,7 @@ import { MobileFlightPanel } from './MobileFlightPanel'
 import { calculateDistance, estimateDuration } from '../utils/distanceUtils'
 import SaveFlightModal from './SaveFlightModal'
 import { supabase } from '../lib/supabase'
+import { DateTime } from 'luxon'
 
 // Add flight data structure
 
@@ -56,6 +57,133 @@ export default function MissionPlannerWrapper() {
   const isDesktop = !isMobile
   const [droneHeading, setDroneHeading] = useState(0)
   const droneHeadingRef = useRef(0)
+
+  // Dynamic date/time/timezone state
+  const [currentDate, setCurrentDate] = useState(DateTime.now().toFormat('yyyy-MM-dd'))
+  const [currentTime, setCurrentTime] = useState(DateTime.now().toFormat('HH:mm'))
+  const [currentTimezone, setCurrentTimezone] = useState('UTC')
+  const [lastCameraPosition, setLastCameraPosition] = useState(null)
+
+  // Initialize with current UTC time and update every minute
+  useEffect(() => {
+    const updateTime = () => {
+      const now = DateTime.now()
+
+      // If we have a specific timezone (not UTC), update time in that timezone
+      if (currentTimezone && currentTimezone !== 'UTC') {
+        const localTime = now.setZone(currentTimezone)
+        setCurrentDate(localTime.toFormat('yyyy-MM-dd'))
+        setCurrentTime(localTime.toFormat('HH:mm'))
+        setSunTime(localTime.toJSDate())
+      } else {
+        // Default to UTC when viewing the globe
+        const utcTime = now.toUTC()
+        setCurrentDate(utcTime.toFormat('yyyy-MM-dd'))
+        setCurrentTime(utcTime.toFormat('HH:mm'))
+        setCurrentTimezone('UTC')
+        setSunTime(utcTime.toJSDate())
+      }
+    }
+    updateTime()
+    const interval = setInterval(updateTime, 60000)
+    return () => clearInterval(interval)
+  }, [currentTimezone]) // Add currentTimezone as dependency
+
+  // Function to check if camera moved enough to warrant timezone check
+  const hasCameraMovedEnough = (newPosition) => {
+    if (!lastCameraPosition) return true
+
+    const latDiff = Math.abs(newPosition.lat - lastCameraPosition.lat)
+    const lngDiff = Math.abs(newPosition.lng - lastCameraPosition.lng)
+
+    // Convert to approximate meters (rough conversion)
+    const latMeters = latDiff * 111000 // 1 degree lat ≈ 111km
+    const lngMeters = lngDiff * 111000 * Math.cos((newPosition.lat * Math.PI) / 180)
+
+    const totalDistance = Math.sqrt(latMeters * latMeters + lngMeters * lngMeters)
+    return totalDistance > 1000 // 1000 meters threshold
+  }
+
+  // Function to fetch timezone data
+  const fetchTimezone = async (lat, lng) => {
+    const url = `http://localhost:8080/timezone?lat=${lat}&lng=${lng}`
+    console.log('🌍 Making timezone request to:', url)
+
+    try {
+      const response = await fetch(url)
+      console.log(' Response status:', response.status)
+      console.log('🌍 Response headers:', response.headers)
+
+      if (!response.ok) {
+        console.warn('Timezone API failed, using UTC')
+        const errorText = await response.text()
+        console.log('🌍 Error response body:', errorText)
+        return null
+      }
+
+      const data = await response.json()
+      console.log('🌍 Timezone data received:', data)
+
+      if (data.status === 'OK') {
+        return data
+      }
+      return null
+    } catch (error) {
+      console.warn('Error fetching timezone:', error)
+      return null
+    }
+  }
+
+  // Function to update timezone based on camera position
+  const updateTimezoneFromCamera = async (cameraPosition) => {
+    console.log('📍 Camera position received:', cameraPosition)
+
+    // If camera is above 2000 meters, reset to UTC (viewing the globe)
+    if (cameraPosition.altitude >= 2000) {
+      console.log('📍 Camera above 2000m, resetting to UTC')
+      setCurrentTimezone('UTC')
+      setLastCameraPosition(cameraPosition)
+      return
+    }
+
+    if (!hasCameraMovedEnough(cameraPosition)) {
+      console.log("📍 Camera hasn't moved enough, skipping timezone update")
+      return
+    }
+
+    console.log('📍 Fetching timezone for:', cameraPosition.lat, cameraPosition.lng)
+    const timezoneData = await fetchTimezone(cameraPosition.lat, cameraPosition.lng)
+
+    if (timezoneData) {
+      console.log('📍 Timezone data received:', timezoneData)
+      setCurrentTimezone(timezoneData.zoneName)
+
+      // Update the displayed time to match the new timezone
+      const localTime = DateTime.fromFormat(timezoneData.formatted, 'yyyy-MM-dd HH:mm:ss', {
+        zone: timezoneData.zoneName,
+      })
+      setCurrentDate(localTime.toFormat('yyyy-MM-dd'))
+      setCurrentTime(localTime.toFormat('HH:mm'))
+      setSunTime(localTime.toJSDate())
+    } else {
+      console.log('📍 No timezone data received, keeping current timezone')
+    }
+
+    setLastCameraPosition(cameraPosition)
+  }
+
+  // Function to handle date/time changes from SunControlPanel
+  const handleDateTimeChange = (date, time, timezone) => {
+    setCurrentDate(date)
+    setCurrentTime(time)
+    setCurrentTimezone(timezone)
+
+    const dt = DateTime.fromISO(`${date}T${time}`, { zone: timezone })
+    if (dt.isValid) {
+      const utcDate = dt.toUTC().toJSDate()
+      setSunTime(utcDate)
+    }
+  }
 
   useEffect(() => {
     console.log('🧭 Updated waypoints:', waypoints)
@@ -635,8 +763,10 @@ export default function MissionPlannerWrapper() {
             segmentSpeeds={segmentSpeeds}
             googlePhotorealistic={googlePhotorealistic}
             setGooglePhotorealistic={setGooglePhotorealistic}
-            currentTimeUTC={`${sunTime.toUTCString().slice(17, 22)} UTC`}
-            onDateTimeChange={setSunTime}
+            currentDate={currentDate}
+            currentTime={currentTime}
+            currentTimezone={currentTimezone}
+            onDateTimeChange={handleDateTimeChange}
           />
         </div>
       </div>
@@ -681,6 +811,7 @@ export default function MissionPlannerWrapper() {
             setTargets={setTargets}
             googlePhotorealistic={googlePhotorealistic}
             sunTime={sunTime}
+            onCameraPositionChange={updateTimezoneFromCamera}
           />
         )}
       </div>

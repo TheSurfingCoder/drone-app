@@ -13,7 +13,9 @@ import { calculateDistance, estimateDuration } from '../utils/distanceUtils'
 export default function ModernStatus3DPill({
   googlePhotorealistic,
   setGooglePhotorealistic,
-  currentTimeUTC,
+  currentDate,
+  currentTime,
+  currentTimezone,
   onDateTimeChange,
   waypoints,
   segmentSpeeds,
@@ -26,6 +28,9 @@ export default function ModernStatus3DPill({
     unitSystem === 'imperial' ? (distanceKm * 0.621371).toFixed(2) : distanceKm.toFixed(2)
   const distanceLabel = unitSystem === 'imperial' ? 'mi' : 'km'
   const durationMin = (estimateDuration(waypoints, segmentSpeeds) / 60).toFixed(1)
+
+  // Format current time for display
+  const currentTimeDisplay = `${currentTime} ${currentTimezone}`
 
   return (
     <div className="flex flex-col items-center space-y-2">
@@ -83,7 +88,7 @@ export default function ModernStatus3DPill({
             </div>
             <div className="hidden md:block">
               <div className="text-[10px] text-gray-500 leading-none">Sun</div>
-              <div className="text-xs font-medium text-gray-900">{currentTimeUTC}</div>
+              <div className="text-xs font-medium text-gray-900">{currentTimeDisplay}</div>
             </div>
             <div className="md:hidden">
               <ClockIcon className="w-4 h-4 text-gray-600" />
@@ -102,7 +107,12 @@ export default function ModernStatus3DPill({
       {/* Expanded Sun Control Panel */}
       {showControls && (
         <div className="bg-white border border-gray-200 shadow-md rounded-xl p-4 mt-1 w-[300px]">
-          <SunControlPanel onDateTimeChange={onDateTimeChange} />
+          <SunControlPanel
+            currentDate={currentDate}
+            currentTime={currentTime}
+            currentTimezone={currentTimezone}
+            onDateTimeChange={onDateTimeChange}
+          />
         </div>
       )}
     </div>

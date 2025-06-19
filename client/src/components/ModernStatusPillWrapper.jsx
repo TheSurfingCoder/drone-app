@@ -9,7 +9,9 @@ export default function ModernStatusPillWrapper({
   segmentSpeeds,
   googlePhotorealistic,
   setGooglePhotorealistic,
-  currentTimeUTC,
+  currentDate,
+  currentTime,
+  currentTimezone,
   onDateTimeChange,
 }) {
   if (viewMode === '2d') {
@@ -26,7 +28,9 @@ export default function ModernStatusPillWrapper({
     <ModernStatus3DPill
       googlePhotorealistic={googlePhotorealistic}
       setGooglePhotorealistic={setGooglePhotorealistic}
-      currentTimeUTC={currentTimeUTC}
+      currentDate={currentDate}
+      currentTime={currentTime}
+      currentTimezone={currentTimezone}
       onDateTimeChange={onDateTimeChange}
       waypoints={waypoints}
       segmentSpeeds={segmentSpeeds}

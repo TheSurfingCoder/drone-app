@@ -108,6 +108,7 @@ func main() {
 
 	// Create handlers
 	flightHandler := handlers.NewFlightHandler(flightsCollection)
+	timezoneHandler := handlers.NewTimezoneHandler()
 	log.Println("Handlers initialized")
 
 	// API routes
@@ -119,6 +120,12 @@ func main() {
 	api.HandleFunc("/flights/{id}", flightHandler.GetFlight).Methods("GET")
 	api.HandleFunc("/flights/{id}", flightHandler.UpdateFlight).Methods("PUT")
 	api.HandleFunc("/flights/{id}", flightHandler.DeleteFlight).Methods("DELETE")
+
+	// Add auth middleware to API routes
+	api.Use(handlers.AuthMiddleware)
+
+	// Timezone routes (no auth required) - moved to different path to avoid /api subrouter
+	r.HandleFunc("/timezone", timezoneHandler.GetTimezone).Methods("GET")
 	log.Println("API routes configured")
 
 	// Add CORS middleware
@@ -152,11 +159,6 @@ func main() {
 			next.ServeHTTP(w, r)
 		})
 	})
-	
-
-	// Add auth middleware
-	api.Use(handlers.AuthMiddleware)
-	log.Println("Auth middleware configured")
 
 	// Add request logging middleware
 	r.Use(func(next http.Handler) http.Handler {
@@ -180,7 +182,6 @@ func main() {
 		port = "8080"
 	}
 
-
 	log.Printf("Frontend URL esttablished")
 	log.Printf("MongoDB connected")
 	log.Printf("Supabase JWT secret configured")
@@ -199,10 +200,10 @@ func main() {
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  120 * time.Second,
 	}
-	
+
 	log.Printf("Server starting on port %s", port)
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
-	}	
-	
+	}
+
 }
