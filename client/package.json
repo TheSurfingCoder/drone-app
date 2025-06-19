@@ -26,8 +26,8 @@
     "preview": "vite preview",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "lint:check": "eslint \"src/**/*.{js,jsx}\" --cache --quiet",
-    "prettier": "prettier --write \"**/*\"",
-    "prettier-check": "prettier --check \"**/*\"",
+    "prettier": "prettier --write \"src/**/*.{js,jsx,json,css,md}\" \"*.{js,jsx,json,md}\"",
+    "prettier-check": "prettier --check \"src/**/*.{js,jsx,json,css,md}\" \"*.{js,jsx,json,md}\"",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage"
