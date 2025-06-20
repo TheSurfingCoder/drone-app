@@ -308,7 +308,7 @@ export default function DesktopWaypointPanel({
               <XIcon size={18} className="text-gray-500" />
             </button>
           </div>
-          
+
           {/* Tab Buttons */}
           <div className="flex space-x-1">
             <button
@@ -327,7 +327,7 @@ export default function DesktopWaypointPanel({
                 </span>
               )}
             </button>
-            
+
             <button
               onClick={() => setActiveTab('clipboard')}
               className={`flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
@@ -339,7 +339,7 @@ export default function DesktopWaypointPanel({
               <ClipboardIcon size={16} />
               <span>Clipboard</span>
             </button>
-            
+
             <button
               onClick={() => setActiveTab('target')}
               className={`flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${

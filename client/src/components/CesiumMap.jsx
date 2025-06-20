@@ -299,7 +299,12 @@ export default function CesiumMap({
         )}
         <WaypointBillboardOverlay waypoints={waypoints} sceneMode={viewer?.scene.mode} />
         <TargetEntity targets={targets} sceneMode={viewer?.scene.mode} />
-        <SegmentLinesOverlay waypoints={waypoints} segmentSpeeds={segmentSpeeds} sceneMode={viewer?.scene.mode} unitSystem={unitSystem} />
+        <SegmentLinesOverlay
+          waypoints={waypoints}
+          segmentSpeeds={segmentSpeeds}
+          sceneMode={viewer?.scene.mode}
+          unitSystem={unitSystem}
+        />
       </Viewer>
     </div>
   )
