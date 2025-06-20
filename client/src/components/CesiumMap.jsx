@@ -18,6 +18,7 @@ import {
   createWorldImageryAsync,
 } from 'cesium'
 import WaypointBillboardOverlay from './WaypointBillboardOverlay'
+import SegmentLinesOverlay from './SegmentLinesOverlay'
 import { recalculateHeadings } from '../utils/recalculateHeadings'
 import TargetEntity from './TargetEntity'
 import config from '../config'
@@ -34,6 +35,8 @@ export default function CesiumMap({
   googlePhotorealistic,
   sunTime,
   onCameraPositionChange,
+  segmentSpeeds,
+  unitSystem,
 }) {
   const viewerRef = useRef(null)
   const [viewer, setViewer] = useState(null)
@@ -296,6 +299,7 @@ export default function CesiumMap({
         )}
         <WaypointBillboardOverlay waypoints={waypoints} sceneMode={viewer?.scene.mode} />
         <TargetEntity targets={targets} sceneMode={viewer?.scene.mode} />
+        <SegmentLinesOverlay waypoints={waypoints} segmentSpeeds={segmentSpeeds} sceneMode={viewer?.scene.mode} unitSystem={unitSystem} />
       </Viewer>
     </div>
   )

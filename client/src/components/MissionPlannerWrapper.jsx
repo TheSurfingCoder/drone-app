@@ -739,9 +739,10 @@ export default function MissionPlannerWrapper() {
           {!user && (
             <button
               onClick={handleAuthClick}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="flex items-center border rounded-full px-3 py-1 hover:bg-gray-50 text-xs sm:text-base space-x-2"
             >
-              Sign In
+              <UserIcon size={16} className="text-gray-600  sm:inline-block" />
+              <span>Sign In</span>
             </button>
           )}
           {user && (
@@ -812,6 +813,8 @@ export default function MissionPlannerWrapper() {
             googlePhotorealistic={googlePhotorealistic}
             sunTime={sunTime}
             onCameraPositionChange={updateTimezoneFromCamera}
+            segmentSpeeds={segmentSpeeds}
+            unitSystem={unitSystem}
           />
         )}
       </div>
