@@ -22,9 +22,6 @@ export default function SunControlPanel({
     const dt = DateTime.fromISO(`${d}T${t}`, { zone: tz })
 
     if (dt.isValid) {
-      const utcDate = dt.toUTC().toJSDate()
-      console.log('🕒 Luxon UTC DateTime:', dt.toUTC().toISO())
-      console.log('🕒 UTC JS Date passed to Cesium:', utcDate.toISOString())
       onDateTimeChange(d, t, tz)
     }
   }

@@ -1,32 +1,19 @@
 import React, { useState, useEffect } from 'react'
 import { XIcon } from 'lucide-react'
 
-export default function TargetWaypointModal({
-  waypoints,
+export default function TargetWayPointModal({
+  isOpen,
+  onClose,
   onConfirm,
-  onCancel,
-  defaultSelectedWaypointIds,
-  targetId,
-  targetIndex,
+  waypoints = [],
+  defaultSelectedWaypointIds = [],
 }) {
-  const [selectedWaypointIds, setSelectedWaypointIds] = useState([])
+  const [selectedWaypointIds, setSelectedWaypointIds] = useState(defaultSelectedWaypointIds)
 
-  /* this runs on the initial mount of targetwaypointmodal  or when targetid changes. 
-    -so on the very first initial mount, defaultselectedwaypoitids is empty
-    -targetid get changed every time we open the modal for a new target
-  */
   useEffect(() => {
-    if (defaultSelectedWaypointIds) {
-      setSelectedWaypointIds(defaultSelectedWaypointIds)
-      console.log('defaault selected waypoint ids', defaultSelectedWaypointIds)
-      console.log(
-        'testing the conditional return blocks for selectedtargetid or for showtargetmodal/targetpending focus',
-        targetId,
-      )
-    }
-  }, [targetId])
+    setSelectedWaypointIds(defaultSelectedWaypointIds)
+  }, [defaultSelectedWaypointIds])
 
-  /* This function is called when a waypoint in the modal is clicked. It toggles that waypoint’s selection state. */
   const handleToggle = (id) => {
     setSelectedWaypointIds((prev) =>
       prev.includes(id) ? prev.filter((wpId) => wpId !== id) : [...prev, id],
@@ -35,6 +22,7 @@ export default function TargetWaypointModal({
 
   const handleConfirm = () => {
     onConfirm(selectedWaypointIds)
+    onClose()
   }
 
   return (
@@ -42,9 +30,9 @@ export default function TargetWaypointModal({
       <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-md">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="font-semibold text-lg">Assign Waypoints to Target #{targetIndex + 1}</h2>
+          <h2 className="font-semibold text-lg">Assign Waypoints to Target</h2>
           <button
-            onClick={onCancel}
+            onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
           >
             <XIcon size={20} />
@@ -105,7 +93,7 @@ export default function TargetWaypointModal({
         {/* Footer */}
         <div className="flex justify-end gap-2 p-4 border-t">
           <button
-            onClick={onCancel}
+            onClick={onClose}
             className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
           >
             Cancel

@@ -22,10 +22,6 @@ export default function WaypointBillboardOverlay({ waypoints, sceneMode }) {
           (wp.groundHeight ?? 0) + (wp.height ?? 0),
         )
 
-        console.log(
-          `Rendering waypoint ${i}: height = ${wp.height}, elevatedPosition =`,
-          elevatedPosition,
-        )
         return (
           <React.Fragment key={i}>
             {/* Waypoint marker at elevated position */}

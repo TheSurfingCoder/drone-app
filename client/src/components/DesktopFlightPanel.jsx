@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { XIcon, Clock, MapPin, Loader2, Trash2, LogOut } from 'lucide-react'
+import { XIcon, TrashIcon, PlayIcon } from 'lucide-react'
 
 export const DesktopFlightPanel = ({
   onClose,
@@ -10,69 +10,88 @@ export const DesktopFlightPanel = ({
   onSignOut,
 }) => {
   return (
-    <div className="fixed inset-0 bg-white z-[99999] flex">
-      <div className="flex-1 overflow-auto">
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold">My Flights</h1>
-              <button
-                onClick={onSignOut}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-              >
-                <LogOut size={16} />
-                Sign Out
-              </button>
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+      <div className="bg-white rounded-xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-800">My Flights</h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <XIcon size={20} className="text-gray-500" />
+          </button>
+        </div>
+
+        {/* Flight List */}
+        <div className="overflow-y-auto max-h-[calc(80vh-140px)] p-6">
+          {flights.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-2 text-lg">No saved flights</div>
+              <div className="text-sm text-gray-500">Create and save your first mission</div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full"
-              aria-label="Close"
-            >
-              <XIcon size={28} />
-            </button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6 z-[999999]">
-            {flights.map((flight) => (
-              <div
-                key={flight.id}
-                className="border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white"
-              >
-                <div className="p-4">
-                  <h3 className="font-semibold text-lg mb-1">{flight.name}</h3>
-                  <div className="text-sm text-gray-500 mb-2">
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {flights.map((flight) => (
+                <div
+                  key={flight.id}
+                  className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-gray-300 transition-colors"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium text-gray-800 text-lg">{flight.name}</h3>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => onLoadFlight(flight)}
+                        className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-colors"
+                        title="Load Flight"
+                      >
+                        <PlayIcon size={16} />
+                      </button>
+                      <button
+                        onClick={() => onDeleteFlight(flight.id)}
+                        className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors"
+                        title="Delete Flight"
+                      >
+                        <TrashIcon size={16} />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-sm text-gray-600">
+                    <div>
+                      <div className="font-medium">Waypoints</div>
+                      <div>{flight.metadata?.totalWaypoints || 0}</div>
+                    </div>
+                    <div>
+                      <div className="font-medium">Distance</div>
+                      <div>{flight.metadata?.totalDistance?.toFixed(2) || 0} km</div>
+                    </div>
+                    <div>
+                      <div className="font-medium">Duration</div>
+                      <div>
+                        {flight.metadata?.estimatedDuration
+                          ? (flight.metadata.estimatedDuration / 60).toFixed(1)
+                          : 0}{' '}
+                        min
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-3">
                     {new Date(flight.date).toLocaleDateString()}
                   </div>
-                  <div className="flex items-center gap-6 text-sm mb-4">
-                    <div className="flex items-center gap-1 text-gray-600">
-                      <Clock size={16} />
-                      <span>{flight.metadata.estimatedDuration.toFixed(1)} min</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-gray-600">
-                      <MapPin size={16} />
-                      <span>{flight.metadata.totalDistance.toFixed(2)} km</span>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => onLoadFlight(flight)}
-                      className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2"
-                    >
-                      <Loader2 size={16} />
-                      Load Flight
-                    </button>
-                    <button
-                      onClick={() => onDeleteFlight(flight.id)}
-                      className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 flex items-center justify-center"
-                      title="Delete Flight"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-6 border-t border-gray-200">
+          <button
+            onClick={onSignOut}
+            className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-lg transition-colors"
+          >
+            Sign Out
+          </button>
         </div>
       </div>
     </div>
@@ -81,20 +100,7 @@ export const DesktopFlightPanel = ({
 
 DesktopFlightPanel.propTypes = {
   onClose: PropTypes.func.isRequired,
-  flights: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-      date: PropTypes.string.isRequired,
-      waypoints: PropTypes.array.isRequired,
-      segmentSpeeds: PropTypes.array.isRequired,
-      metadata: PropTypes.shape({
-        totalWaypoints: PropTypes.number.isRequired,
-        totalDistance: PropTypes.number.isRequired,
-        estimatedDuration: PropTypes.number.isRequired,
-      }).isRequired,
-    }),
-  ).isRequired,
+  flights: PropTypes.array.isRequired,
   onLoadFlight: PropTypes.func.isRequired,
   onDeleteFlight: PropTypes.func.isRequired,
   onSignOut: PropTypes.func.isRequired,

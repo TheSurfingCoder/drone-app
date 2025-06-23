@@ -5,11 +5,11 @@ import { getBezierCurvePoints } from '../utils/geometry'
 
 export default function SegmentLinesOverlay({
   waypoints,
-  segmentSpeeds,
   sceneMode,
   unitSystem = 'metric',
+  missionSettings,
 }) {
-  if (!waypoints || waypoints.length < 2 || !segmentSpeeds) {
+  if (!waypoints || waypoints.length < 2) {
     return null
   }
 
@@ -19,10 +19,10 @@ export default function SegmentLinesOverlay({
         if (i >= waypoints.length - 1) return null
 
         const next = waypoints[i + 1]
-        const speedData = segmentSpeeds[i] || {}
-        const isCurved = speedData.isCurved
-        const tightness = speedData.curveTightness ?? 15
-        const speed = speedData.speed ?? 10
+        const isCurved =
+          missionSettings?.flightPathMode === 'CURVED' && Math.abs(wp.cornerRadius ?? 0.2) > 0.2
+        const tightness = wp.cornerRadius ?? 0.2
+        const speed = wp.speed ?? 10
 
         // Get positions for the segment
         let positions = []

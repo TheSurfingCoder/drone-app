@@ -19,9 +19,13 @@ import {
 } from 'cesium'
 import WaypointBillboardOverlay from './WaypointBillboardOverlay'
 import SegmentLinesOverlay from './SegmentLinesOverlay'
-import { recalculateHeadings } from '../utils/recalculateHeadings'
+import { recalculateHeadingsLegacy } from '../utils/recalculateHeadings'
 import TargetEntity from './TargetEntity'
 import config from '../config'
+import {
+  createPerformanceMonitor,
+  applyPerformanceOptimizations,
+} from '../utils/performanceMonitor'
 
 Ion.defaultAccessToken = config.cesiumToken
 
@@ -35,18 +39,18 @@ export default function CesiumMap({
   googlePhotorealistic,
   sunTime,
   onCameraPositionChange,
-  segmentSpeeds,
   unitSystem,
+  missionSettings,
 }) {
   const viewerRef = useRef(null)
   const [viewer, setViewer] = useState(null)
+  const [performanceMonitor, setPerformanceMonitor] = useState(null)
 
   // Attach viewer instance
   useEffect(() => {
     const interval = setInterval(() => {
       const cesiumElement = viewerRef.current?.cesiumElement
       if (cesiumElement && !viewer) {
-        console.log('🛠 Attaching Cesium viewer')
         setViewer(cesiumElement)
         clearInterval(interval)
       }
@@ -68,6 +72,30 @@ export default function CesiumMap({
     viewer.scene.atmosphere.saturationShift = -0.1 // Desaturate the colors
     viewer.scene.skyAtmosphere = new SkyAtmosphere()
     viewer.scene.skyAtmosphere.show = true
+
+    // Additional performance optimizations
+    // Optimize globe rendering
+    viewer.scene.globe.maximumScreenSpaceError = 4 // Start with medium detail
+    viewer.scene.globe.tileCacheSize = 1000 // Increase tile cache size
+    viewer.scene.globe.enableLighting = true // Disable lighting for better performance
+
+    // Optimize scene rendering
+    viewer.scene.fog.enabled = false // Disable fog for better performance
+
+    // Optimize camera controls
+    viewer.scene.screenSpaceCameraController.enableCollisionDetection = false // Disable collision detection for better performance
+
+    // Set reasonable memory limits
+    viewer.scene.globe.maximumScreenSpaceError = 4
+    viewer.scene.globe.tileCacheSize = 1000
+
+    // Initialize performance monitor
+    const monitor = createPerformanceMonitor(viewer)
+    setPerformanceMonitor(monitor)
+    monitor.startMonitoring()
+
+    // Apply initial performance optimizations
+    applyPerformanceOptimizations(viewer, 'balanced')
   }, [viewer])
 
   // Click handler to add waypoints
@@ -108,9 +136,10 @@ export default function CesiumMap({
               pitch: 0,
               roll: 0,
               focusTargetId: null,
+              cornerRadius: 0.2, // Default corner radius per DJI SDK spec
             },
           ]
-          return recalculateHeadings(updated, targets) // targets must be in scope
+          return recalculateHeadingsLegacy(updated, targets) // targets must be in scope
         })
       }
 
@@ -167,12 +196,9 @@ export default function CesiumMap({
     if (!viewer) return
     const julian = JulianDate.fromDate(jsDate)
 
-    console.log('📆 Julian Date as JS date:', JulianDate.toDate(julian).toISOString())
-
     viewer.clock.currentTime = julian
     viewer.clock.shouldAnimate = false // freezes time
 
-    console.log(viewer.scene.light)
     updateSkyAtmosphereFromSun(viewer)
   }
 
@@ -203,8 +229,6 @@ export default function CesiumMap({
     // Step 5: Dot product = how aligned sun is with "up"
     const dot = Cartesian3.dot(up, sunDirection)
     const elevationAngle = CesiumMath.toDegrees(Math.asin(CesiumMath.clamp(dot, -1.0, 1.0)))
-
-    console.log('☀️ Sun Elevation:', elevationAngle.toFixed(2), '°')
 
     // Step 6: Adjust sky appearance based on sun elevation
     if (elevationAngle < -6) {
@@ -263,6 +287,81 @@ export default function CesiumMap({
     }
   }, [viewer, onCameraPositionChange])
 
+  // Solution 2: Smart tile loading optimization
+  useEffect(() => {
+    if (!viewer) return
+
+    const optimizeTileLoading = () => {
+      const camera = viewer.camera
+      const height = camera.positionCartographic.height
+
+      // Optimize tile loading based on camera height
+      if (height < 500) {
+        // Close to ground - use high detail
+        viewer.scene.globe.maximumScreenSpaceError = 2
+      } else if (height < 2000) {
+        // Medium distance - balanced detail
+        viewer.scene.globe.maximumScreenSpaceError = 4
+      } else if (height < 10000) {
+        // Far distance - lower detail
+        viewer.scene.globe.maximumScreenSpaceError = 8
+      } else {
+        // Very far - minimal detail
+        viewer.scene.globe.maximumScreenSpaceError = 16
+      }
+    }
+
+    // Apply optimization on camera move
+    viewer.camera.moveEnd.addEventListener(optimizeTileLoading)
+
+    // Apply initial optimization
+    optimizeTileLoading()
+
+    return () => {
+      viewer.camera.moveEnd.removeEventListener(optimizeTileLoading)
+    }
+  }, [viewer])
+
+  // Automatic performance optimization based on monitor feedback
+  useEffect(() => {
+    if (!performanceMonitor || !viewer) return
+
+    const checkAndOptimize = () => {
+      const stats = performanceMonitor.getPerformanceStats()
+
+      // Automatically adjust performance level based on current performance
+      if (stats.performanceStatus === 'poor') {
+        applyPerformanceOptimizations(viewer, 'low')
+      } else if (stats.performanceStatus === 'moderate') {
+        applyPerformanceOptimizations(viewer, 'balanced')
+      } else {
+        applyPerformanceOptimizations(viewer, 'high')
+      }
+
+      // Log suggestions for manual optimization
+      const suggestions = performanceMonitor.suggestOptimizations()
+      if (suggestions.length > 0) {
+        // Suggestions available but not logged to reduce console noise
+      }
+    }
+
+    // Check performance every 10 seconds
+    const interval = setInterval(checkAndOptimize, 10000)
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [performanceMonitor, viewer])
+
+  // Cleanup performance monitor on unmount
+  useEffect(() => {
+    return () => {
+      if (performanceMonitor) {
+        performanceMonitor.stopMonitoring()
+      }
+    }
+  }, [performanceMonitor])
+
   return (
     <div id="cesium map main div" className="relative w-full h-full bg-red-100">
       {console.trace('🟥 CesiumMap wrapper div rendered')}
@@ -286,24 +385,40 @@ export default function CesiumMap({
           <Cesium3DTileset
             key="google-tiles"
             url={IonResource.fromAssetId(2275207)}
+            // Solution 1: Optimized Google tileset configuration
+            maximumScreenSpaceError={16}
+            maximumMemoryUsage={512}
+            cullWithChildrenBounds={false}
+            skipLevelOfDetail={true}
+            baseScreenSpaceError={1024}
+            skipScreenSpaceErrorFactor={4}
+            skipLevels={1}
             onError={(e) => console.error('Google Tileset error', e)}
-            onReady={(e) => console.log('Google Tileset loaded', e)}
+            onReady={(e) => {}}
           />
         ) : (
           <Cesium3DTileset
             key="osm-tiles"
             url={IonResource.fromAssetId(96188)}
+            // Apply similar optimizations to OSM tileset
+            maximumScreenSpaceError={16}
+            maximumMemoryUsage={256}
+            cullWithChildrenBounds={false}
+            skipLevelOfDetail={true}
+            baseScreenSpaceError={1024}
+            skipScreenSpaceErrorFactor={4}
+            skipLevels={1}
             onError={(e) => console.error('OSM Tileset error', e)}
-            onReady={(e) => console.log('OSM Tileset loaded', e)}
+            onReady={(e) => {}}
           />
         )}
         <WaypointBillboardOverlay waypoints={waypoints} sceneMode={viewer?.scene.mode} />
         <TargetEntity targets={targets} sceneMode={viewer?.scene.mode} />
         <SegmentLinesOverlay
           waypoints={waypoints}
-          segmentSpeeds={segmentSpeeds}
           sceneMode={viewer?.scene.mode}
           unitSystem={unitSystem}
+          missionSettings={missionSettings}
         />
       </Viewer>
     </div>

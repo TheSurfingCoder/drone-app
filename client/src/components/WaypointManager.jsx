@@ -23,9 +23,11 @@ export default function WaypointManager({
   setTargetPendingFocus,
   setShowTargetModal,
   onTargetClick,
-  segmentSpeeds,
   onClick,
   onSelectSegment,
+  missionSettings,
+  updateWaypointsWithHeadingSystem,
+  setShowMultipleTargetsModal,
 }) {
   useMapEvents({
     click: async (e) => {
@@ -57,15 +59,40 @@ export default function WaypointManager({
         elevatedPosition,
         heading: null,
         focusTargetId: null,
+        cornerRadius: 0.2, // Default corner radius per DJI SDK spec
       }
 
       if (mapMode === 'waypoint') {
-        setWaypoints((prev) => recalculateHeadings([...prev, newPoint], targets))
+        const newWaypoints = [...waypoints, newPoint]
+
+        // If there's an existing target, make the new waypoint focus on it
+        if (targets.length > 0) {
+          newWaypoints[newWaypoints.length - 1].focusTargetId = targets[0].id
+        }
+
+        if (updateWaypointsWithHeadingSystem) {
+          updateWaypointsWithHeadingSystem(newWaypoints, targets, [])
+        } else {
+          const headingResult = recalculateHeadings(
+            newWaypoints,
+            targets,
+            missionSettings || {},
+            [],
+          )
+          setWaypoints(
+            Array.isArray(headingResult.waypoints) ? headingResult.waypoints : newWaypoints,
+          )
+        }
       } else if (mapMode === 'target') {
-        const newTargetId = Date.now()
-        setTargetPendingFocus({ ...newPoint, id: newTargetId })
-        setShowTargetModal(true)
-        console.log('targets:', targets)
+        // Check if a target already exists
+        if (targets.length > 0) {
+          // Show warning modal instead of creating new target
+          setShowMultipleTargetsModal(true)
+        } else {
+          const newTargetId = Date.now()
+          setTargetPendingFocus({ ...newPoint, id: newTargetId })
+          setShowTargetModal(true)
+        }
       }
     },
   })
@@ -95,19 +122,29 @@ export default function WaypointManager({
               }
             }
 
-            setWaypoints((prev) => {
-              const updated = [...prev]
-              updated[i] = {
-                ...updated[i],
-                lat: newLat,
-                lng: newLng,
-                groundHeight,
-                elevatedPosition: 0,
-                groundPosition: 0,
-                height: groundHeight,
-              }
-              return recalculateHeadings(updated, targets)
-            })
+            const updated = [...waypoints]
+            updated[i] = {
+              ...updated[i],
+              lat: newLat,
+              lng: newLng,
+              groundHeight,
+              elevatedPosition: Cartesian3.fromDegrees(
+                newLng,
+                newLat,
+                groundHeight + updated[i].height,
+              ),
+              groundPosition: Cartesian3.fromDegrees(newLng, newLat, groundHeight),
+            }
+
+            // Use enhanced heading system if available, otherwise fallback
+            if (updateWaypointsWithHeadingSystem) {
+              updateWaypointsWithHeadingSystem(updated, targets, [])
+            } else {
+              const headingResult = recalculateHeadings(updated, targets, missionSettings || {}, [])
+              setWaypoints(
+                Array.isArray(headingResult.waypoints) ? headingResult.waypoints : updated,
+              )
+            }
           }}
           onClick={onClick}
         />
@@ -116,9 +153,9 @@ export default function WaypointManager({
       {waypoints.map((wp, i) => {
         if (i >= waypoints.length - 1) return null
         const next = waypoints[i + 1]
-        const speedData = segmentSpeeds?.[i] || {}
-        const isCurved = speedData.isCurved
-        const tightness = speedData.curveTightness ?? 15
+        const isCurved =
+          missionSettings?.flightPathMode === 'CURVED' && Math.abs(wp.cornerRadius ?? 0.2) > 0.2
+        const tightness = wp.cornerRadius ?? 0.2
         const latlngs = isCurved
           ? getBezierCurvePoints(wp, next, tightness)
           : [
@@ -143,9 +180,10 @@ export default function WaypointManager({
               <PolylineDecorator
                 segmentLatLngs={waypoints.slice(0, -1).map((wp, i) => {
                   const next = waypoints[i + 1]
-                  const speedData = segmentSpeeds?.[i] || {}
-                  const isCurved = speedData.isCurved
-                  const tightness = speedData.curveTightness ?? 15
+                  const isCurved =
+                    missionSettings?.flightPathMode === 'CURVED' &&
+                    Math.abs(wp.cornerRadius ?? 0.2) > 0.2
+                  const tightness = wp.cornerRadius ?? 0.2
                   return isCurved
                     ? getBezierCurvePoints(wp, next, tightness)
                     : [
@@ -153,7 +191,6 @@ export default function WaypointManager({
                         [next.lat, next.lng],
                       ]
                 })}
-                segmentSpeeds={segmentSpeeds}
                 onSelectSegment={onSelectSegment}
                 unitSystem={unitSystem}
                 waypoints={waypoints}
@@ -165,8 +202,11 @@ export default function WaypointManager({
 
       {waypoints.map((wp, i) => {
         const next = waypoints[i + 1]
-        const speedData = segmentSpeeds?.[i] || {}
-        if (speedData.isCurved && next) {
+        if (
+          missionSettings?.flightPathMode === 'CURVED' &&
+          Math.abs(wp.cornerRadius ?? 0.2) > 0.2 &&
+          next
+        ) {
           try {
             const angle = getTangentAngle(wp, next)
             const arrowLat = wp.lat + 0.00008 * Math.sin((angle * Math.PI) / 180)
@@ -196,18 +236,25 @@ export default function WaypointManager({
           position={[target.lat, target.lng]}
           id={target.id}
           onDragEnd={(id, newLat, newLng) => {
-            setTargets((prev) => {
-              return prev.map((target) =>
-                target.id === id ? { ...target, lat: newLat, lng: newLng } : target,
-              )
-            })
-
-            setWaypoints((prevWaypoints) =>
-              recalculateHeadings(
-                prevWaypoints,
-                targets.map((t) => (t.id === id ? { ...t, lat: newLat, lng: newLng } : t)),
-              ),
+            const updatedTargets = targets.map((target) =>
+              target.id === id ? { ...target, lat: newLat, lng: newLng } : target,
             )
+            setTargets(updatedTargets)
+
+            // Use enhanced heading system if available, otherwise fallback
+            if (updateWaypointsWithHeadingSystem) {
+              updateWaypointsWithHeadingSystem(waypoints, updatedTargets, [])
+            } else {
+              const headingResult = recalculateHeadings(
+                waypoints,
+                updatedTargets,
+                missionSettings || {},
+                [],
+              )
+              setWaypoints(
+                Array.isArray(headingResult.waypoints) ? headingResult.waypoints : waypoints,
+              )
+            }
           }}
           onTargetClick={onTargetClick}
         />

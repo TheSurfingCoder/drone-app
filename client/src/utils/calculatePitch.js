@@ -1,45 +1,21 @@
-export function calculatePitch(from, to) {
-  if (!from || !to) return 0
-  if (!from.elevatedPosition || !to.elevatedPosition) return 0
+import { calculateDistance } from './distanceUtils'
 
-  const fromCart = from.elevatedPosition
-  const toCart = to.elevatedPosition
+export function calculatePitch(fromWaypoint, toWaypoint, targetWaypoint) {
+  if (!fromWaypoint || !toWaypoint || !targetWaypoint) {
+    return 0
+  }
 
-  const dx = toCart.x - fromCart.x
-  const dy = toCart.y - fromCart.y
-  const dz = to.groundHeight + to.height - (from.groundHeight + from.height)
+  // Calculate the distance to target
+  const targetDistance = calculateDistance(fromWaypoint, targetWaypoint)
 
-  const horizontalDistance = Math.sqrt(dx * dx + dy * dy)
-  const totalDistance = Math.sqrt(horizontalDistance * horizontalDistance + dz * dz)
+  // Calculate the height difference
+  const heightDifference = targetWaypoint.height - fromWaypoint.height
 
-  if (totalDistance === 0) return 0
+  // Calculate pitch angle using arctangent
+  const pitchRadians = Math.atan2(heightDifference, targetDistance)
 
-  console.log('📐 Calculating pitch:', {
-    from: fromCart.z,
-    to: toCart.z,
-    dz: dz,
-  })
+  // Convert to degrees
+  const pitchDegrees = pitchRadians * (180 / Math.PI)
 
-  const radians = Math.asin(dz / totalDistance)
-
-  console.log('🎯 Pitch Calculation Debug', {
-    from: {
-      lat: from.lat,
-      lng: from.lng,
-      height: from.height,
-      groundHeight: from.groundHeight,
-      total: from.groundHeight + from.height,
-    },
-    to: {
-      lat: to.lat,
-      lng: to.lng,
-      height: to.height,
-      groundHeight: to.groundHeight,
-      total: to.groundHeight + to.height,
-    },
-    dz: to.groundHeight + to.height - (from.groundHeight + from.height),
-  })
-  console.log('🎯 Final pitch (deg):', radians * (180 / Math.PI))
-
-  return radians * (180 / Math.PI) // ✅ Flip sign
+  return pitchDegrees
 }

@@ -41,9 +41,15 @@ export function getBezierCurvePoints(from, to, curveTightness = 15, numPoints = 
   const dy = to.lat - from.lat
   const len = Math.sqrt(dx * dx + dy * dy)
 
+  // Handle both positive (outward) and negative (inward) curvature
+  // Positive values create outward curves, negative values create inward curves
+  const absTightness = Math.abs(curveTightness)
+  const direction = curveTightness >= 0 ? 1 : -1
+
   // Move control point perpendicular to path by curveTightness meters
-  const offsetLng = (-dy / len) * (curveTightness / 111320)
-  const offsetLat = (dx / len) * (curveTightness / 110540)
+  // Direction determines whether it's outward (positive) or inward (negative)
+  const offsetLng = direction * (-dy / len) * (absTightness / 111320)
+  const offsetLat = direction * (dx / len) * (absTightness / 110540)
 
   const control = {
     lat: controlLat + offsetLat,
@@ -112,14 +118,6 @@ export function generateCurvePoints(from, to, maxOffsetMeters = 15, map) {
     const offsetLatLng = L.GeometryUtil.destination(interpolated.latLng, perpendicularAngle, offset)
     curvedPoints.push({ lat: offsetLatLng.lat, lng: offsetLatLng.lng })
   }
-
-  console.log('🌀 Fixed curve generated', {
-    from,
-    to,
-    maxOffsetMeters,
-    resolution,
-    curvedPoints,
-  })
 
   return curvedPoints
 }

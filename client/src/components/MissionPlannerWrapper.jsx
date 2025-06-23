@@ -6,8 +6,6 @@ import DroneController from './DroneController'
 import CurrentLocationButton from './CurrentLocationButton'
 import { Cartesian3, HeadingPitchRange } from 'cesium'
 import QuickAccessToolbar from './QuickAccessToolbar'
-import TargetWaypointModal from './TargetWayPointModal'
-import { recalculateHeadings } from '../utils/recalculateHeadings'
 import CountdownModal from './CountdownModal'
 import MobileWaypointPanel from './MobileWaypointPanel'
 import DesktopWaypointPanel from './DesktopWaypointPanel'
@@ -17,11 +15,13 @@ import { useAuth } from '../contexts/AuthContext'
 import AuthModal from './AuthModal'
 import { UserIcon } from 'lucide-react'
 import { DesktopFlightPanel } from './DesktopFlightPanel'
-import { MobileFlightPanel } from './MobileFlightPanel'
+import MobileFlightPanel from './MobileFlightPanel'
 import { calculateDistance, estimateDuration } from '../utils/distanceUtils'
 import SaveFlightModal from './SaveFlightModal'
 import { supabase } from '../lib/supabase'
 import { DateTime } from 'luxon'
+import POIGuidance from './POIGuidance'
+import POIRemovalModal from './POIRemovalModal'
 
 // Add flight data structure
 
@@ -37,14 +37,11 @@ export default function MissionPlannerWrapper() {
   const [targets, setTargets] = useState([])
   const [showTargetModal, setShowTargetModal] = useState(false)
   const [targetPendingFocus, setTargetPendingFocus] = useState(null)
-  const [selectedTargetId, setSelectedTargetId] = useState(null)
   const [showCountdown, setShowCountdown] = useState(false)
   const [countdownMessage, setCountdownMessage] = useState('Starting in')
-  const [segmentSpeeds, setSegmentSpeeds] = useState([])
   const isMobile = useIsMobile()
   const [selectedWaypoint, setSelectedWaypoint] = useState(null)
   const [isMobileCollapsed, setIsMobileCollapsed] = useState(true)
-  const [expandedSegmentId, setExpandedSegmentId] = useState(null)
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false)
   const hasAutoOpenedDesktopPanel = useRef(false) // tracks if we've already opened it
   const [googlePhotorealistic, setGooglePhotorealistic] = useState(true)
@@ -58,11 +55,39 @@ export default function MissionPlannerWrapper() {
   const [droneHeading, setDroneHeading] = useState(0)
   const droneHeadingRef = useRef(0)
 
+  // POI guidance and confirmation state
+  const [showPOIGuidance, setShowPOIGuidance] = useState(false)
+  const [showPOIRemovalModal, setShowPOIRemovalModal] = useState(false)
+  const [showMultipleTargetsModal, setShowMultipleTargetsModal] = useState(false)
+  const [previousHeadingMode, setPreviousHeadingMode] = useState('AUTO')
+
+  // Enhanced heading system state
+  const [headingSystem, setHeadingSystem] = useState({
+    timeline: [],
+    getHeadingAtTime: () => 0,
+    getActiveActuatorsAtTime: () => [],
+    getMissionProgressAtTime: () => 0,
+    getWaypointAtTime: () => ({ waypoint: null, segment: 0, progress: 0 }),
+  })
+
+  // Global mission settings
+  const [missionSettings, setMissionSettings] = useState({
+    autoFlightSpeed: 10, // Default cruise speed (m/s)
+    maxFlightSpeed: 15, // Max allowed speed (m/s)
+    finishedAction: 'GO_HOME', // What drone does after mission
+    repeatTimes: 1, // Number of times to repeat mission
+    globalTurnMode: 'CLOCKWISE', // Default yaw direction
+    gimbalPitchRotationEnabled: true, // Enable per-waypoint gimbal control
+    headingMode: 'AUTO', // How aircraft faces during flight
+    flightPathMode: 'NORMAL', // Flight path mode: 'NORMAL' or 'CURVED'
+  })
+
   // Dynamic date/time/timezone state
   const [currentDate, setCurrentDate] = useState(DateTime.now().toFormat('yyyy-MM-dd'))
   const [currentTime, setCurrentTime] = useState(DateTime.now().toFormat('HH:mm'))
   const [currentTimezone, setCurrentTimezone] = useState('UTC')
-  const [lastCameraPosition, setLastCameraPosition] = useState(null)
+
+  const lastCameraPosition = useRef(null)
 
   // Initialize with current UTC time and update every minute
   useEffect(() => {
@@ -89,87 +114,63 @@ export default function MissionPlannerWrapper() {
     return () => clearInterval(interval)
   }, [currentTimezone]) // Add currentTimezone as dependency
 
-  // Function to check if camera moved enough to warrant timezone check
-  const hasCameraMovedEnough = (newPosition) => {
-    if (!lastCameraPosition) return true
+  // Function to update timezone based on camera position
+  const updateTimezoneFromCamera = async (cameraPosition) => {
+    if (!cameraPosition) return
 
-    const latDiff = Math.abs(newPosition.lat - lastCameraPosition.lat)
-    const lngDiff = Math.abs(newPosition.lng - lastCameraPosition.lng)
+    // Check if camera has moved enough to warrant a new timezone request
+    if (lastCameraPosition.current) {
+      const latDiff = Math.abs(cameraPosition.lat - lastCameraPosition.current.lat)
+      const lngDiff = Math.abs(cameraPosition.lng - lastCameraPosition.current.lng)
 
-    // Convert to approximate meters (rough conversion)
-    const latMeters = latDiff * 111000 // 1 degree lat ≈ 111km
-    const lngMeters = lngDiff * 111000 * Math.cos((newPosition.lat * Math.PI) / 180)
+      // Only update if moved more than 0.1 degrees (roughly 11km)
+      if (latDiff < 0.1 && lngDiff < 0.1) {
+        return
+      }
+    }
 
-    const totalDistance = Math.sqrt(latMeters * latMeters + lngMeters * lngMeters)
-    return totalDistance > 1000 // 1000 meters threshold
-  }
+    // Reset to UTC if camera is too high
+    if (cameraPosition.altitude > 2000) {
+      setCurrentTimezone('UTC')
+      lastCameraPosition.current = cameraPosition
+      return
+    }
 
-  // Function to fetch timezone data
-  const fetchTimezone = async (lat, lng) => {
-    const url = `http://localhost:8080/timezone?lat=${lat}&lng=${lng}`
-    console.log('🌍 Making timezone request to:', url)
+    // Check if camera has moved enough to warrant a new timezone request
+    if (lastCameraPosition.current) {
+      const latDiff = Math.abs(cameraPosition.lat - lastCameraPosition.current.lat)
+      const lngDiff = Math.abs(cameraPosition.lng - lastCameraPosition.current.lng)
+
+      // Only update if moved more than 0.1 degrees (roughly 11km)
+      if (latDiff < 0.1 && lngDiff < 0.1) {
+        return
+      }
+    }
 
     try {
+      const url = `https://api.timezonedb.com/v2.1/get-time-zone?key=${import.meta.env.VITE_TIMEZONE_API_KEY}&format=json&by=position&lat=${cameraPosition.lat}&lng=${cameraPosition.lng}`
+
       const response = await fetch(url)
-      console.log(' Response status:', response.status)
-      console.log('🌍 Response headers:', response.headers)
 
       if (!response.ok) {
         console.warn('Timezone API failed, using UTC')
-        const errorText = await response.text()
-        console.log('🌍 Error response body:', errorText)
-        return null
+        setCurrentTimezone('UTC')
+        return
       }
 
       const data = await response.json()
-      console.log('🌍 Timezone data received:', data)
 
-      if (data.status === 'OK') {
-        return data
+      if (data.status === 'OK' && data.zoneName) {
+        setCurrentTimezone(data.zoneName)
+        lastCameraPosition.current = cameraPosition
+      } else {
+        console.warn('Error fetching timezone:', data)
+        setCurrentTimezone('UTC')
       }
-      return null
     } catch (error) {
       console.warn('Error fetching timezone:', error)
-      return null
-    }
-  }
-
-  // Function to update timezone based on camera position
-  const updateTimezoneFromCamera = async (cameraPosition) => {
-    console.log('📍 Camera position received:', cameraPosition)
-
-    // If camera is above 2000 meters, reset to UTC (viewing the globe)
-    if (cameraPosition.altitude >= 2000) {
-      console.log('📍 Camera above 2000m, resetting to UTC')
       setCurrentTimezone('UTC')
-      setLastCameraPosition(cameraPosition)
-      return
     }
-
-    if (!hasCameraMovedEnough(cameraPosition)) {
-      console.log("📍 Camera hasn't moved enough, skipping timezone update")
-      return
-    }
-
-    console.log('📍 Fetching timezone for:', cameraPosition.lat, cameraPosition.lng)
-    const timezoneData = await fetchTimezone(cameraPosition.lat, cameraPosition.lng)
-
-    if (timezoneData) {
-      console.log('📍 Timezone data received:', timezoneData)
-      setCurrentTimezone(timezoneData.zoneName)
-
-      // Update the displayed time to match the new timezone
-      const localTime = DateTime.fromFormat(timezoneData.formatted, 'yyyy-MM-dd HH:mm:ss', {
-        zone: timezoneData.zoneName,
-      })
-      setCurrentDate(localTime.toFormat('yyyy-MM-dd'))
-      setCurrentTime(localTime.toFormat('HH:mm'))
-      setSunTime(localTime.toJSDate())
-    } else {
-      console.log('📍 No timezone data received, keeping current timezone')
-    }
-
-    setLastCameraPosition(cameraPosition)
   }
 
   // Function to handle date/time changes from SunControlPanel
@@ -184,71 +185,6 @@ export default function MissionPlannerWrapper() {
       setSunTime(utcDate)
     }
   }
-
-  useEffect(() => {
-    console.log('🧭 Updated waypoints:', waypoints)
-  }, [waypoints])
-
-  useEffect(() => {
-    if (waypoints.length >= 2) {
-      setSegmentSpeeds((prev) => {
-        const needed = waypoints.length - 1
-
-        // If segment count is already correct, update only fromId/toId
-        if (prev.length === needed) {
-          return prev.map((seg, i) => ({
-            ...seg,
-            fromId: waypoints[i].id,
-            toId: waypoints[i + 1].id,
-            curveTightness: seg.curveTightness ?? 15, // ← ensure it's present
-          }))
-        }
-
-        // If too few segments, add new ones
-        if (prev.length < needed) {
-          const newSegments = []
-          for (let i = prev.length; i < needed; i++) {
-            newSegments.push({
-              fromId: waypoints[i].id,
-              toId: waypoints[i + 1].id,
-              speed: 10,
-              interpolateHeading: true,
-              isCurved: false,
-              curveTightness: 15, // ← default value
-            })
-          }
-          return [...prev, ...newSegments]
-        }
-
-        // If too many segments (waypoints were deleted), truncate
-        return prev.slice(0, needed)
-      })
-    } else {
-      setSegmentSpeeds([])
-    }
-  }, [waypoints])
-
-  useEffect(() => {
-    if (
-      waypoints.length === 1 && // just added first
-      isDesktop && // desktop only
-      isDesktopCollapsed && // currently collapsed
-      !hasAutoOpenedDesktopPanel.current // hasn't auto-opened yet
-    ) {
-      setIsDesktopCollapsed(false) // open the panel
-      hasAutoOpenedDesktopPanel.current = true // mark it as opened
-    }
-  }, [waypoints, isDesktop, isDesktopCollapsed])
-
-  const handleCurveTightnessChange = (fromId, toId, newTightness) => {
-    setSegmentSpeeds((prev) =>
-      prev.map((seg) =>
-        seg.fromId === fromId && seg.toId === toId ? { ...seg, curveTightness: newTightness } : seg,
-      ),
-    )
-  }
-
-  const targetIndex = targets.findIndex((t) => t.id === selectedTargetId)
 
   function useIsMobile() {
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768 || window.innerHeight <= 500)
@@ -265,22 +201,17 @@ export default function MissionPlannerWrapper() {
     return isMobile
   }
 
-  const handleSegmentSpeedChange = (fromId, toId, newSpeed) => {
-    const fromIndex = waypoints.findIndex((wp) => wp.id === fromId)
-    const toIndex = waypoints.findIndex((wp) => wp.id === toId)
-    const index = Math.min(fromIndex, toIndex)
+  // Per-waypoint handlers
+  const handleWaypointSpeedChange = (waypointId, newSpeed) => {
+    setWaypoints((prev) =>
+      prev.map((wp) => (wp.id === waypointId ? { ...wp, speed: newSpeed } : wp)),
+    )
+  }
 
-    if (index < 0 || index >= segmentSpeeds.length) {
-      console.warn('Invalid segment index:', index)
-      return
-    }
-
-    const newSpeeds = [...segmentSpeeds]
-    newSpeeds[index] = {
-      ...newSpeeds[index], // keep existing data (interpolateHeading, etc)
-      speed: newSpeed, // only update speed
-    }
-    setSegmentSpeeds(newSpeeds)
+  const handleWaypointCurvatureChange = (waypointId, newCornerRadius) => {
+    setWaypoints((prev) =>
+      prev.map((wp) => (wp.id === waypointId ? { ...wp, cornerRadius: newCornerRadius } : wp)),
+    )
   }
 
   const handleWaypointHeightChange = (waypointId, newHeight) => {
@@ -289,20 +220,28 @@ export default function MissionPlannerWrapper() {
     )
   }
 
-  const handleApplySpeedToAll = (newSpeed) => {
-    const updated = segmentSpeeds.map((seg) => ({
-      ...seg,
-      speed: newSpeed,
-    }))
-    setSegmentSpeeds(updated)
-    console.log('🚀 Applied speed to all segments:', updated)
+  // Helper function to update waypoints with enhanced heading system
+  const updateWaypointsWithHeadingSystem = (newWaypoints) => {
+    setWaypoints(newWaypoints)
+  }
+
+  const handleWaypointHeadingChange = (waypointId, newHeading) => {
+    const updatedWaypoints = waypoints.map((wp) =>
+      wp.id === waypointId
+        ? {
+            ...wp,
+            waypointHeading: newHeading,
+            heading: newHeading, // Also update the calculated heading for map display
+          }
+        : wp,
+    )
+    updateWaypointsWithHeadingSystem(updatedWaypoints)
   }
 
   const handleSelectWaypoint = (id) => {
     if (isMobile) setIsMobileCollapsed(false)
     if (isDesktop) setIsDesktopCollapsed(false)
 
-    setExpandedSegmentId(null)
     setSelectedWaypoint(id)
 
     const wp = waypoints.find((w) => w.id === id)
@@ -350,36 +289,6 @@ export default function MissionPlannerWrapper() {
     }
   }
 
-  const handleSelectSegment = (fromId, toId) => {
-    setExpandedSegmentId(`${fromId}-${toId}`)
-    setSelectedWaypoint(null) // Clear any waypoint selection
-
-    if (isMobile) setIsMobileCollapsed(false)
-    if (isDesktop) setIsDesktopCollapsed(false)
-
-    const from = waypoints.find((wp) => wp.id === fromId)
-    const to = waypoints.find((wp) => wp.id === toId)
-    const map = mapRef.current
-
-    if (from && to && map) {
-      const midLat = (from.lat + to.lat) / 2
-      const midLng = (from.lng + to.lng) / 2
-      const zoom = map.getZoom()
-      const adjustedZoom = zoom > 19 ? zoom : 19
-
-      const midpoint = L.latLng(midLat, midLng)
-      const point = map.project(midpoint, adjustedZoom)
-
-      // Offset for desktop/mobile
-      const offsetX = isDesktop ? 150 : 0 // shift left on desktop
-      const offsetY = isMobile ? 100 : 0 // shift up on mobile
-      const adjustedPoint = L.point(point.x + offsetX, point.y + offsetY)
-
-      const newLatLng = map.unproject(adjustedPoint, adjustedZoom)
-      map.setView(newLatLng, adjustedZoom)
-    }
-  }
-
   const handleUpdateWaypoint = (id, updates) => {
     setWaypoints((prev) => prev.map((wp) => (wp.id === id ? { ...wp, ...updates } : wp)))
   }
@@ -390,8 +299,6 @@ export default function MissionPlannerWrapper() {
   }
 
   const handleLocateMe = (lat, lng) => {
-    console.log(`📍 Handling locate for ${viewMode.toUpperCase()}:`, lat, lng)
-    console.log(mapRef.current)
     if (viewMode === '2d') {
       const map = mapRef.current
       map.setView([lat, lng], 15)
@@ -413,67 +320,41 @@ export default function MissionPlannerWrapper() {
   const clearWaypoints = () => {
     setWaypoints([])
     setTargets([])
-    setSegmentSpeeds([])
+    setHeadingSystem({
+      timeline: [],
+      getHeadingAtTime: () => 0,
+      getActiveActuatorsAtTime: () => [],
+      getMissionProgressAtTime: () => 0,
+      getWaypointAtTime: () => ({ waypoint: null, segment: 0, progress: 0 }),
+    })
   }
-
-  // Safely hydrate waypoints for Cesium. Used if your app ever loads saved/incomplete waypoints.
-  const hydratedWaypoints = waypoints.map((wp) => ({
-    ...wp,
-    groundPosition:
-      typeof wp.groundPosition === 'object'
-        ? wp.groundPosition
-        : Cartesian3.fromDegrees(wp.lng, wp.lat, wp.groundHeight ?? 0),
-    elevatedPosition:
-      typeof wp.elevatedPosition === 'object'
-        ? wp.elevatedPosition
-        : Cartesian3.fromDegrees(wp.lng, wp.lat, (wp.groundHeight ?? 0) + (wp.height ?? 50)),
-  }))
 
   // Add fetchFlights function
   const fetchFlights = async () => {
     if (!user) {
-      console.log('No user, skipping fetchFlights')
       return
     }
 
     try {
-      console.log('Fetching flights for user:', user.id)
-
-      // Get the current session
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession()
-      if (sessionError) {
-        console.error('Session error:', sessionError)
-        throw sessionError
-      }
-      if (!session) {
-        console.error('No active session')
-        throw new Error('No active session')
-      }
-
-      console.log('Making request to /api/flights')
       const response = await fetch('/api/flights', {
+        method: 'GET',
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
         },
       })
 
       if (!response.ok) {
         console.error('Response not OK:', response.status, response.statusText)
-        throw new Error(`Failed to fetch flights: ${response.status} ${response.statusText}`)
+        return
       }
 
       const flights = await response.json()
-      console.log('Fetched flights:', flights)
 
       if (!Array.isArray(flights)) {
         console.error('Expected array of flights, got:', typeof flights)
         return
       }
 
-      console.log(`Setting ${flights.length} flights in state`)
       setSavedFlights(flights)
     } catch (error) {
       console.error('Error fetching flights:', error)
@@ -497,15 +378,10 @@ export default function MissionPlannerWrapper() {
   }
 
   // Create flight data function (moved up to fix ESLint error)
-  const createFlightData = (waypoints, segmentSpeeds, name) => {
-    console.log('Raw waypoints:', waypoints) // Debug log
-
+  const createFlightData = (waypoints, name) => {
     // Convert Cesium waypoints to plain objects
     const serializedWaypoints = waypoints
       .map((wp, index) => {
-        // Debug log for each waypoint
-        console.log(`Processing waypoint ${index}:`, wp)
-
         // Safety check for required properties
         if (typeof wp.lat === 'undefined' || typeof wp.lng === 'undefined') {
           console.error(`Waypoint ${index} is missing lat/lng:`, wp)
@@ -520,7 +396,8 @@ export default function MissionPlannerWrapper() {
           altitude: wp.height || 0,
           heading: wp.heading || 0,
           gimbalPitch: wp.pitch || 0,
-          speed: segmentSpeeds.find((s) => s.toId === wp.id)?.speed || 5, // Get speed from segmentSpeeds array
+          speed: wp.speed || 10, // Use waypoint speed
+          cornerRadius: wp.cornerRadius || 0.2, // Use waypoint corner radius
           turnMode: 'CLOCKWISE',
           actions: [],
         }
@@ -529,60 +406,38 @@ export default function MissionPlannerWrapper() {
 
     // Calculate total distance and duration
     const totalDistance = calculateDistance(waypoints)
-    const estimatedDuration = estimateDuration(totalDistance, segmentSpeeds)
+    const estimatedDuration = estimateDuration(waypoints) // Updated to not use segmentSpeeds
 
     const flightData = {
-      name,
-      date: new Date().toISOString(),
+      name: name,
       waypoints: serializedWaypoints,
-      segmentSpeeds: segmentSpeeds || [],
+      missionSettings: missionSettings, // Include global mission settings
       metadata: {
         totalWaypoints: waypoints.length,
-        totalDistance,
-        estimatedDuration,
+        totalDistance: totalDistance,
+        estimatedDuration: estimatedDuration,
       },
-      // DJI SDK specific fields
-      missionType: 'WAYPOINT',
-      maxFlightSpeed: 15,
-      autoFlightSpeed: 10,
-      finishedAction: 'GO_HOME',
-      headingHome: 'TOWARD_POINT_OF_INTEREST',
-      flightpathMode: 'NORMAL',
-      repeatTimes: 1,
-      turnMode: 'CLOCKWISE',
-      actions: [],
+      date: new Date().toISOString(),
     }
-
-    // Debug log the final flight data
-    console.log('Created flight data:', flightData)
 
     return flightData
   }
 
   const handleSaveFlight = async (name) => {
     if (!user) {
-      setIsAuthModalOpen(true)
-      return
-    }
-
-    if (!waypoints || waypoints.length < 2) {
-      console.log('Please add at least 2 waypoints before saving')
+      console.error('No user logged in')
       return
     }
 
     try {
-      // Get the current session
+      const flightData = createFlightData(waypoints, name)
+
       const {
         data: { session },
         error: sessionError,
       } = await supabase.auth.getSession()
       if (sessionError) throw sessionError
       if (!session) throw new Error('No active session')
-
-      const flightData = createFlightData(waypoints, segmentSpeeds, name)
-
-      // Log the request data
-      console.log('Sending flight data:', JSON.stringify(flightData, null, 2))
 
       const response = await fetch('/api/flights', {
         method: 'POST',
@@ -594,30 +449,22 @@ export default function MissionPlannerWrapper() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        console.error('Server error response:', errorData)
-        throw new Error(
-          errorData.message || `Failed to save flight: ${response.status} ${response.statusText}`,
-        )
+        throw new Error(`Failed to save flight: ${response.status}`)
       }
 
-      const savedFlight = await response.json()
-      setSavedFlights((prev) => [...prev, savedFlight])
-      console.log('Flight saved successfully!')
+      await response.json()
+
+      // Refresh flights list
+      await fetchFlights()
+      setShowSaveModal(false)
     } catch (error) {
       console.error('Error saving flight:', error)
-      console.log(error.message || 'Failed to save flight. Please try again.')
     }
   }
 
-  // Add load flight function
   const handleLoadFlight = (flight) => {
-    console.log('Loading flight:', flight) // Debug log
-
     // Convert saved flight data back to Cesium objects
     const loadedWaypoints = flight.waypoints.map((wp) => {
-      console.log('Processing waypoint:', wp) // Debug log
-
       const waypoint = {
         id: Date.now() + Math.random(), // Generate new ID
         lat: wp.coordinate.latitude,
@@ -625,7 +472,8 @@ export default function MissionPlannerWrapper() {
         height: wp.altitude,
         heading: wp.heading,
         pitch: wp.gimbalPitch,
-        speed: wp.speed,
+        speed: wp.speed || 10, // Load waypoint speed
+        cornerRadius: wp.cornerRadius || 0.2, // Load waypoint corner radius
         turnMode: wp.turnMode,
         actions: wp.actions || [],
       }
@@ -642,25 +490,27 @@ export default function MissionPlannerWrapper() {
         waypoint.height,
       )
 
-      console.log('Created waypoint:', waypoint) // Debug log
       return waypoint
     })
 
-    console.log('Loaded waypoints:', loadedWaypoints) // Debug log
     setWaypoints(loadedWaypoints)
-    setSegmentSpeeds(flight.segmentSpeeds)
+
+    // Load mission settings if they exist
+    if (flight.missionSettings) {
+      setMissionSettings(flight.missionSettings)
+    }
+
     setShowFlights(false)
   }
 
   // Add handleDeleteFlight function
   const handleDeleteFlight = async (flightId) => {
     if (!user) {
-      setIsAuthModalOpen(true)
+      console.error('No user logged in')
       return
     }
 
     try {
-      // Get the current session
       const {
         data: { session },
         error: sessionError,
@@ -676,32 +526,155 @@ export default function MissionPlannerWrapper() {
       })
 
       if (!response.ok) {
-        throw new Error(`Failed to delete flight: ${response.status} ${response.statusText}`)
+        throw new Error(`Failed to delete flight: ${response.status}`)
       }
 
-      // Remove the flight from state
-      setSavedFlights((prev) => prev.filter((flight) => flight.id !== flightId))
-      console.log('Flight deleted successfully!')
+      await fetchFlights() // Refresh the list
     } catch (error) {
       console.error('Error deleting flight:', error)
-      console.log(error.message || 'Failed to delete flight. Please try again.')
     }
   }
 
-  // Add handleSignOut function
   const handleSignOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
+      await supabase.auth.signOut()
+      setSavedFlights([])
       setShowFlights(false)
     } catch (error) {
       console.error('Error signing out:', error)
-      console.log('Error signing out. Please try again.')
     }
   }
 
+  useEffect(() => {
+    if (
+      waypoints.length === 1 && // just added first
+      isDesktop && // desktop only
+      isDesktopCollapsed && // currently collapsed
+      !hasAutoOpenedDesktopPanel.current // hasn't auto-opened yet
+    ) {
+      setIsDesktopCollapsed(false) // open the panel
+      hasAutoOpenedDesktopPanel.current = true // mark it as opened
+    }
+  }, [waypoints, isDesktop, isDesktopCollapsed])
+
+  // Safely hydrate waypoints for Cesium. Used if your app ever loads saved/incomplete waypoints.
+  const hydratedWaypoints = (Array.isArray(waypoints) ? waypoints : []).map((wp) => ({
+    ...wp,
+    groundPosition:
+      typeof wp.groundPosition === 'object'
+        ? wp.groundPosition
+        : Cartesian3.fromDegrees(wp.lng, wp.lat, wp.groundHeight ?? 0),
+    elevatedPosition:
+      typeof wp.elevatedPosition === 'object'
+        ? wp.elevatedPosition
+        : Cartesian3.fromDegrees(wp.lng, wp.lat, (wp.groundHeight ?? 0) + (wp.height ?? 50)),
+  }))
+
+  const handleMissionSettingChange = (setting, value) => {
+    // Handle heading mode changes for POI guidance
+    if (setting === 'headingMode') {
+      const hasPOI =
+        Array.isArray(waypoints) &&
+        waypoints.some((wp) => wp.focusTargetId !== null && wp.focusTargetId !== undefined)
+
+      if (value === 'TOWARD_POINT_OF_INTEREST') {
+        // Switching TO POI mode
+        if (!hasPOI && targets.length === 0) {
+          // No POI exists, show guidance
+          setShowPOIGuidance(true)
+        }
+      } else if (previousHeadingMode === 'TOWARD_POINT_OF_INTEREST' && hasPOI) {
+        // Switching AWAY from POI mode with existing POI
+        setShowPOIRemovalModal(true)
+        return // Don't update yet, wait for user confirmation
+      }
+
+      setPreviousHeadingMode(missionSettings.headingMode)
+    }
+
+    setMissionSettings((prev) => ({
+      ...prev,
+      [setting]: value,
+    }))
+  }
+
+  // POI removal confirmation handlers
+  const handlePOIRemovalConfirm = () => {
+    // Remove all POI assignments from waypoints
+    const updatedWaypoints = (Array.isArray(waypoints) ? waypoints : []).map((wp) => ({
+      ...wp,
+      focusTargetId: null,
+    }))
+
+    // Remove the target from targets array
+    setTargets([])
+
+    // Switch to Auto heading mode
+    setMissionSettings((prev) => ({
+      ...prev,
+      headingMode: 'AUTO',
+    }))
+
+    // Update waypoints with new heading system
+    updateWaypointsWithHeadingSystem(updatedWaypoints)
+
+    setShowPOIRemovalModal(false)
+  }
+
+  const handlePOIRemovalCancel = () => {
+    // Revert heading mode back to POI
+    setMissionSettings((prev) => ({
+      ...prev,
+      headingMode: 'TOWARD_POINT_OF_INTEREST',
+    }))
+    setShowPOIRemovalModal(false)
+  }
+
+  const handlePOIGuidanceComplete = () => {
+    setShowPOIGuidance(false)
+  }
+
+  const handlePOIGuidanceDismiss = () => {
+    setShowPOIGuidance(false)
+  }
+
+  // Function to handle target removal
+  const handleRemoveTarget = () => {
+    // Remove all POI assignments from waypoints
+    const updatedWaypoints = (Array.isArray(waypoints) ? waypoints : []).map((wp) => ({
+      ...wp,
+      focusTargetId: null,
+    }))
+
+    // Remove the target from targets array
+    setTargets([])
+
+    // Switch to Auto heading mode
+    setMissionSettings((prev) => ({
+      ...prev,
+      headingMode: 'AUTO',
+    }))
+
+    // Update waypoints with new heading system
+    updateWaypointsWithHeadingSystem(updatedWaypoints)
+  }
+
+  // Update heading system when mission settings change
+  useEffect(() => {
+    if (Array.isArray(waypoints) && waypoints.length > 0) {
+      updateWaypointsWithHeadingSystem(waypoints)
+    }
+  }, [missionSettings.headingMode, missionSettings.autoFlightSpeed])
+
+  // Hide POI guidance when targets are added
+  useEffect(() => {
+    if (showPOIGuidance && targets.length > 0) {
+      setShowPOIGuidance(false)
+    }
+  }, [targets.length, showPOIGuidance])
+
   return (
-    <div className=" relative w-screen h-screen ">
+    <div className="relative w-screen h-screen ">
       {/* 🧭 Top Bar */}
       <div className="fixed top-0 w-full h-[56px] sm:h-auto py-2 items-center bg-white px-4 flex flex-row justify-between gap-2 z-[9999] sm:h-auto sm:px-4 sm:py-0 sm:flex-row sm:items-center sm:gap-0 sm:py-2">
         <div className="flex items-center gap-3">
@@ -720,12 +693,12 @@ export default function MissionPlannerWrapper() {
             showCountdown={showCountdown}
             setShowCountdown={setShowCountdown}
             setCountdownMessage={setCountdownMessage}
-            segmentSpeeds={segmentSpeeds}
             unitSystem={unitSystem}
             mapRef={mapRef}
             droneHeadingRef={droneHeadingRef}
             setDroneHeading={setDroneHeading}
             droneHeading={droneHeading}
+            missionSettings={missionSettings}
           />
         </div>
         <div className="flex items-center space-x-4">
@@ -750,7 +723,6 @@ export default function MissionPlannerWrapper() {
               onClick={handleAuthClick}
               className="flex items-center border rounded-full px-3 py-1 hover:bg-gray-50 text-xs sm:text-base space-x-2"
             >
-              {/* Only show icon on sm and up */}
               <UserIcon size={16} className="text-gray-600  sm:inline-block" />
               <span>My Flights</span>
             </button>
@@ -761,7 +733,6 @@ export default function MissionPlannerWrapper() {
             viewMode={viewMode}
             waypoints={waypoints}
             unitSystem={unitSystem}
-            segmentSpeeds={segmentSpeeds}
             googlePhotorealistic={googlePhotorealistic}
             setGooglePhotorealistic={setGooglePhotorealistic}
             currentDate={currentDate}
@@ -772,7 +743,7 @@ export default function MissionPlannerWrapper() {
         </div>
       </div>
 
-      {/* 🗺 Map View (with top bar padding) */}
+      {/* Map Container */}
       <div className="absolute inset-0 z-0">
         {viewMode === '2d' ? (
           <MapComponent
@@ -788,19 +759,18 @@ export default function MissionPlannerWrapper() {
             setDronePosition={setDronePosition}
             mapMode={mapMode}
             ref={mapRef}
-            segmentSpeeds={segmentSpeeds}
             onTargetClick={(targetId) => {
-              setSelectedTargetId(targetId)
+              // No longer showing target modal - targets are managed globally as POI
             }}
-            expandedSegmentId={expandedSegmentId}
-            setExpandedSegmentId={setExpandedSegmentId}
             setIsMobileCollapsed={setIsMobileCollapsed}
             setIsDesktopCollapsed={setIsDesktopCollapsed}
             isMobile={isMobile}
             isDesktop={isDesktop}
             onClick={handleSelectWaypoint}
-            onSelectSegment={handleSelectSegment}
             droneHeading={droneHeading}
+            missionSettings={missionSettings}
+            updateWaypointsWithHeadingSystem={updateWaypointsWithHeadingSystem}
+            setShowMultipleTargetsModal={setShowMultipleTargetsModal}
           />
         ) : (
           <CesiumMap
@@ -813,8 +783,8 @@ export default function MissionPlannerWrapper() {
             googlePhotorealistic={googlePhotorealistic}
             sunTime={sunTime}
             onCameraPositionChange={updateTimezoneFromCamera}
-            segmentSpeeds={segmentSpeeds}
             unitSystem={unitSystem}
+            missionSettings={missionSettings}
           />
         )}
       </div>
@@ -825,7 +795,11 @@ export default function MissionPlannerWrapper() {
           message={countdownMessage}
           seconds={countdownMessage === 'Starting in' ? 3 : 2}
           onComplete={() => {
-            if (countdownMessage === 'Starting in') {
+            if (
+              countdownMessage === 'Starting in' &&
+              Array.isArray(waypoints) &&
+              waypoints.length > 0
+            ) {
               setDronePosition([waypoints[0].lat, waypoints[0].lng])
               // mission simulation logic
             }
@@ -835,59 +809,53 @@ export default function MissionPlannerWrapper() {
       )}
 
       {showTargetModal && targetPendingFocus && (
-        <TargetWaypointModal
-          waypoints={waypoints}
-          targetId={targetPendingFocus.id} // ✅ new target ID
-          targetIndex={targets.length} // ✅ next index
-          defaultSelectedWaypointIds={waypoints
-            .filter((wp) => wp.focusTargetId === targetPendingFocus.id)
-            .map((wp) => wp.id)}
-          onConfirm={(selectedIds) => {
-            const waypointsWithTarget = waypoints.map((wp) =>
-              selectedIds.includes(wp.id) ? { ...wp, focusTargetId: targetPendingFocus.id } : wp,
-            )
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-4">Add POI Target</h3>
+            <p className="text-gray-600 mb-6">
+              This target will be used as the Point of Interest (POI) for all waypoints. All
+              waypoints will automatically focus on this target when POI heading mode is enabled.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setTargetPendingFocus(null)
+                  setShowTargetModal(false)
+                }}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // Add the target and make all waypoints focus on it
+                  const newTargets = [...targets, targetPendingFocus]
+                  setTargets(newTargets)
 
-            const updatedWaypoints = recalculateHeadings(waypointsWithTarget, [
-              ...targets,
-              targetPendingFocus, // ✅ already has `id`
-            ])
+                  // Update all waypoints to focus on this target
+                  const updatedWaypoints = waypoints.map((wp) => ({
+                    ...wp,
+                    focusTargetId: targetPendingFocus.id,
+                  }))
 
-            setWaypoints(updatedWaypoints)
-            setTargets((prev) => [...prev, targetPendingFocus])
-            setTargetPendingFocus(null)
-            setShowTargetModal(false)
-          }}
-          onCancel={() => {
-            setTargetPendingFocus(null)
-            setShowTargetModal(false)
-          }}
-        />
-      )}
+                  // Switch to POI heading mode
+                  setMissionSettings((prev) => ({
+                    ...prev,
+                    headingMode: 'TOWARD_POINT_OF_INTEREST',
+                  }))
 
-      {selectedTargetId !== null && (
-        <TargetWaypointModal
-          waypoints={waypoints}
-          targetId={selectedTargetId}
-          targetIndex={targetIndex}
-          defaultSelectedWaypointIds={waypoints
-            .filter((wp) => wp.focusTargetId === selectedTargetId)
-            .map((wp) => wp.id)}
-          onConfirm={(selectedIds) => {
-            const updatedWaypoints = waypoints.map((wp) => {
-              if (selectedIds.includes(wp.id)) {
-                return { ...wp, focusTargetId: selectedTargetId }
-              } else if (wp.focusTargetId === selectedTargetId) {
-                // Unassigned this target
-                return { ...wp, focusTargetId: null }
-              }
-              return wp
-            })
-
-            setWaypoints(recalculateHeadings(updatedWaypoints, targets))
-            setSelectedTargetId(null)
-          }}
-          onCancel={() => setSelectedTargetId(null)}
-        />
+                  // Update waypoints with new heading system
+                  updateWaypointsWithHeadingSystem(updatedWaypoints)
+                  setTargetPendingFocus(null)
+                  setShowTargetModal(false)
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Add POI
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* 📍 Floating Panels */}
@@ -905,20 +873,16 @@ export default function MissionPlannerWrapper() {
             onSelectWaypoint={handleSelectWaypoint}
             onUpdateWaypoint={handleUpdateWaypoint}
             onDeleteWaypoint={handleDeleteWaypoint}
-            setSelectedTargetId={setSelectedTargetId}
-            setShowTargetModal={setShowTargetModal}
             setIsMobileCollapsed={setIsMobileCollapsed}
             onModeChange={setMapMode}
             isMobileCollapsed={isMobileCollapsed}
-            expandedSegmentId={expandedSegmentId}
-            setExpandedSegmentId={setExpandedSegmentId}
-            handleSegmentSpeedChange={handleSegmentSpeedChange}
-            segmentSpeeds={segmentSpeeds}
-            handleApplySpeedToAll={handleApplySpeedToAll}
-            handleSelectSegment={handleSelectSegment}
-            targets={targets}
             handleWaypointHeightChange={handleWaypointHeightChange}
+            handleWaypointSpeedChange={handleWaypointSpeedChange}
+            handleWaypointCurvatureChange={handleWaypointCurvatureChange}
+            handleWaypointHeadingChange={handleWaypointHeadingChange}
+            targets={targets}
             unitSystem={unitSystem}
+            missionSettings={missionSettings}
           />
         </div>
       )}
@@ -930,21 +894,19 @@ export default function MissionPlannerWrapper() {
             onSelectWaypoint={handleSelectWaypoint}
             onUpdateWaypoint={handleUpdateWaypoint}
             onDeleteWaypoint={handleDeleteWaypoint}
-            segmentSpeeds={segmentSpeeds}
-            expandedSegmentId={expandedSegmentId}
-            setExpandedSegmentId={setExpandedSegmentId}
-            handleSegmentSpeedChange={handleSegmentSpeedChange}
-            handleApplySpeedToAll={handleApplySpeedToAll}
-            setSelectedTargetId={setSelectedTargetId}
-            setShowTargetModal={setShowTargetModal}
             onModeChange={setMapMode}
             unitSystem={unitSystem}
             isDesktopCollapsed={isDesktopCollapsed}
             setIsDesktopCollapsed={setIsDesktopCollapsed}
-            onSelectSegment={handleSelectSegment}
-            setSegmentSpeeds={setSegmentSpeeds}
-            handleCurveTightnessChange={handleCurveTightnessChange}
             handleWaypointHeightChange={handleWaypointHeightChange}
+            handleWaypointSpeedChange={handleWaypointSpeedChange}
+            handleWaypointCurvatureChange={handleWaypointCurvatureChange}
+            handleWaypointHeadingChange={handleWaypointHeadingChange}
+            missionSettings={missionSettings}
+            onMissionSettingChange={handleMissionSettingChange}
+            targets={targets}
+            headingSystem={headingSystem}
+            onRemoveTarget={handleRemoveTarget}
           />
         </div>
       )}
@@ -976,6 +938,42 @@ export default function MissionPlannerWrapper() {
         onClose={() => setShowSaveModal(false)}
         onSave={handleSaveFlight}
       />
+
+      {/* POI Guidance and Confirmation Modals */}
+      <POIGuidance
+        isVisible={showPOIGuidance}
+        onComplete={handlePOIGuidanceComplete}
+        onDismiss={handlePOIGuidanceDismiss}
+      />
+
+      <POIRemovalModal
+        isVisible={showPOIRemovalModal}
+        onConfirm={handlePOIRemovalConfirm}
+        onCancel={handlePOIRemovalCancel}
+      />
+
+      {/* Multiple Targets Warning Modal */}
+      {showMultipleTargetsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-4 text-orange-600">
+              ⚠️ Multiple POI Targets Not Allowed
+            </h3>
+            <p className="text-gray-600 mb-6">
+              You can only have one Point of Interest (POI) target at a time. To add a new POI,
+              first remove the existing one or move it to a new location.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowMultipleTargetsModal(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

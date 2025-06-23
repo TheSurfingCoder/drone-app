@@ -18,7 +18,7 @@ export default function ModernStatus3DPill({
   currentTimezone,
   onDateTimeChange,
   waypoints,
-  segmentSpeeds,
+
   unitSystem,
 }) {
   const [showControls, setShowControls] = useState(false)
@@ -27,7 +27,7 @@ export default function ModernStatus3DPill({
   const distance =
     unitSystem === 'imperial' ? (distanceKm * 0.621371).toFixed(2) : distanceKm.toFixed(2)
   const distanceLabel = unitSystem === 'imperial' ? 'mi' : 'km'
-  const durationMin = (estimateDuration(waypoints, segmentSpeeds) / 60).toFixed(1)
+  const durationMin = (estimateDuration(waypoints) / 60).toFixed(1)
 
   // Format current time for display
   const currentTimeDisplay = `${currentTime} ${currentTimezone}`

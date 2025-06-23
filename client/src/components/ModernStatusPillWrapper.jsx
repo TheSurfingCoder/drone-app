@@ -6,7 +6,6 @@ export default function ModernStatusPillWrapper({
   viewMode,
   waypoints,
   unitSystem,
-  segmentSpeeds,
   googlePhotorealistic,
   setGooglePhotorealistic,
   currentDate,
@@ -15,13 +14,7 @@ export default function ModernStatusPillWrapper({
   onDateTimeChange,
 }) {
   if (viewMode === '2d') {
-    return (
-      <ModernStatusPill
-        waypoints={waypoints}
-        unitSystem={unitSystem}
-        segmentSpeeds={segmentSpeeds}
-      />
-    )
+    return <ModernStatusPill waypoints={waypoints} unitSystem={unitSystem} />
   }
 
   return (
@@ -33,7 +26,6 @@ export default function ModernStatusPillWrapper({
       currentTimezone={currentTimezone}
       onDateTimeChange={onDateTimeChange}
       waypoints={waypoints}
-      segmentSpeeds={segmentSpeeds}
       unitSystem={unitSystem}
     />
   )

@@ -10,8 +10,8 @@ export default function QuickAccessToolbar({
 }) {
   const isTargetMode = currentMode === 'target'
 
-  const handleFileImport = () => {
-    console.log('Import file clicked')
+  const handleImportClick = () => {
+    // Import functionality will be implemented here
   }
 
   const handleFileExport = () => {
@@ -56,7 +56,7 @@ export default function QuickAccessToolbar({
   return (
     <div className="fixed left-0 top-1/2 -translate-y-1/2 bg-white rounded-r-lg shadow-lg p-2 flex flex-col items-center space-y-3">
       <ModeToggle />
-      <ToolbarButton icon={UploadIcon} label="Import" onClick={handleFileImport} />
+      <ToolbarButton icon={UploadIcon} label="Import" onClick={handleImportClick} />
       <ToolbarButton icon={DownloadIcon} label="Save & Export" onClick={handleFileExport} />
     </div>
   )

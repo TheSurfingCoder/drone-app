@@ -5,7 +5,6 @@ import 'cesium/Build/Cesium/Widgets/widgets.css'
 import { AuthProvider } from './contexts/AuthContext'
 
 export default function App() {
-  console.log('hello form app.jsx')
   return (
     <AuthProvider>
       <MissionPlannerWrapper />

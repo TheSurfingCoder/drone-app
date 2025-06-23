@@ -12,7 +12,6 @@ export default function useCesiumInit(viewerRef) {
       try {
         const terrain = await CesiumTerrainProvider.fromIonAssetId(1)
         await terrain.readyPromise
-        console.log('✅ Terrain loaded')
         setTerrainProvider(terrain)
       } catch (err) {
         console.error('❌ Terrain failed:', err)
@@ -24,7 +23,6 @@ export default function useCesiumInit(viewerRef) {
   useEffect(() => {
     const tryAttachViewer = () => {
       if (!viewer && viewerRef.current?.cesiumElement) {
-        console.log('🛠 Manually attaching viewer')
         setViewer(viewerRef.current.cesiumElement)
       }
     }

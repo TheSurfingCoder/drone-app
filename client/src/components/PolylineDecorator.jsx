@@ -6,7 +6,6 @@ import 'leaflet-geometryutil'
 
 export default function PolylineDecorator({
   segmentLatLngs,
-  segmentSpeeds,
   onSelectSegment,
   unitSystem,
   waypoints,
@@ -21,7 +20,7 @@ export default function PolylineDecorator({
     segmentLatLngs.forEach((latlngs, i) => {
       if (!latlngs || latlngs.length < 2) return
 
-      const speed = segmentSpeeds?.[i]?.speed ?? 10
+      const speed = waypoints[i]?.speed ?? 10
       const displaySpeed =
         unitSystem === 'metric' ? `${speed.toFixed(1)} m/s` : `${(speed * 2.23694).toFixed(1)} mph`
 
@@ -95,7 +94,7 @@ export default function PolylineDecorator({
     return () => {
       map.removeLayer(layerGroup)
     }
-  }, [map, segmentLatLngs, segmentSpeeds, onSelectSegment, unitSystem, waypoints])
+  }, [map, segmentLatLngs, onSelectSegment, unitSystem, waypoints])
 
   return null
 }

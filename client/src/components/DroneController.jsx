@@ -5,7 +5,6 @@ import { calculateHeadingFromTo } from '../utils/interpolationHeading'
 
 export default function DroneController({
   waypoints,
-  segmentSpeeds,
   setDronePosition,
   setLogs,
   handleClearWaypoints,
@@ -16,6 +15,7 @@ export default function DroneController({
   droneHeadingRef,
   setDroneHeading,
   droneHeading,
+  missionSettings,
 }) {
   const [clicked, setClicked] = useState(false)
 
@@ -70,10 +70,12 @@ export default function DroneController({
     for (let i = 0; i < waypoints.length - 1; i++) {
       const from = waypoints[i]
       const to = waypoints[i + 1]
-      const seg = segmentSpeeds?.[i]
-      const bezierPoints = getBezierCurvePoints(from, to, seg.curveTightness ?? 15, 20)
+      const isCurved =
+        missionSettings?.flightPathMode === 'CURVED' && Math.abs(from.cornerRadius ?? 0.2) > 0.2
+      const tightness = from.cornerRadius ?? 0.2
+      const bezierPoints = getBezierCurvePoints(from, to, tightness, 20)
 
-      if (seg?.isCurved) {
+      if (isCurved) {
         fullPath.push(...bezierPoints) // curved segment path
       } else if (i === 0) {
         fullPath.push({ lat: from.lat, lng: from.lng })
@@ -111,7 +113,7 @@ export default function DroneController({
 
       const to = currentPathRef.current[idx + 1]
       const segmentIdx = Math.min(waypoints.length - 2, idx)
-      const speed = segmentSpeeds?.[segmentIdx]?.speed ?? 10
+      const speed = waypoints[segmentIdx]?.speed ?? 10
 
       if (lastTimeRef.current === null) {
         lastTimeRef.current = timestamp
@@ -129,9 +131,8 @@ export default function DroneController({
         deltaTime,
       })
 
-      const segment = segmentSpeeds?.[segmentIdx]
-      const fromWp = waypoints.find((wp) => wp.id === segment?.fromId)
-      const toWp = waypoints.find((wp) => wp.id === segment?.toId)
+      const fromWp = waypoints[segmentIdx]
+      const toWp = waypoints[segmentIdx + 1]
 
       // Setup heading interpolation for this segment
       if (headingStateRef.current.segmentId !== segmentIdx) {
@@ -149,9 +150,7 @@ export default function DroneController({
       const progress = Math.max(0, Math.min(1, distSoFar / totalDist))
 
       const { start, end } = headingStateRef.current
-      const interpolatedHeading = segment?.interpolateHeading
-        ? lerpAngleShortest(start, end, progress)
-        : start
+      const interpolatedHeading = lerpAngleShortest(start, end, progress)
 
       // Update drone position and heading
       droneHeadingRef.current = interpolatedHeading

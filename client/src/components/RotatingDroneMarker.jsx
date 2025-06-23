@@ -15,13 +15,9 @@ export default function RotatingDroneMarker({ position, heading, icon }) {
         rotationAngle: correctedHeading,
         rotationOrigin: 'center center',
       }).addTo(map)
-      console.log(`🧭 [INIT] heading: ${heading}, final: ${correctedHeading}`)
     } else {
       markerRef.current.setLatLng(position)
       markerRef.current.setRotationAngle(heading - 90)
-      console.log('🧭 Marker angle being set:', heading - 90)
-
-      console.log(`🧭 [UPDATE] heading: ${heading}, final: ${correctedHeading}`)
     }
 
     return () => {

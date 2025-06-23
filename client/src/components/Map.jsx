@@ -20,7 +20,6 @@ export default function MapComponent({
   setTargetPendingFocus,
   setShowTargetModal,
   onTargetClick,
-  segmentSpeeds,
   expandedSegmentId,
   setExpandedSegmentId,
   setIsMobileCollapsed,
@@ -31,6 +30,9 @@ export default function MapComponent({
   onSelectSegment,
   droneHeading,
   ref,
+  missionSettings,
+  updateWaypointsWithHeadingSystem,
+  setShowMultipleTargetsModal,
 }) {
   const startPosition = [20, 0]
   const [terrainProvider, setTerrainProvider] = useState(null)
@@ -54,8 +56,6 @@ export default function MapComponent({
     loadTerrain()
   }, [])
 
-  console.log('🔄 Rendering drone with heading:', droneHeading)
-
   return (
     <MapContainer
       ref={ref}
@@ -64,9 +64,7 @@ export default function MapComponent({
       maxZoom={22}
       zoomControl={false}
       scrollWheelZoom={true}
-      whenCreated={
-        (map) => console.log('Leaflet map created:', map) // ✅ Add this
-      } // bind map ref on creation
+      whenCreated={(map) => {}} // bind map ref on creation
       className="h-full w-full"
     >
       <TileLayer
@@ -85,7 +83,6 @@ export default function MapComponent({
         setTargetPendingFocus={setTargetPendingFocus} // ✅ pass down
         setShowTargetModal={setShowTargetModal} // ✅ pass down
         onTargetClick={onTargetClick}
-        segmentSpeeds={segmentSpeeds}
         setIsMobileCollapsed={setIsMobileCollapsed}
         setExpandedSegmentId={setExpandedSegmentId}
         isMobile={isMobile}
@@ -93,6 +90,9 @@ export default function MapComponent({
         setIsDesktopCollapsed={setIsDesktopCollapsed}
         onClick={onClick}
         onSelectSegment={onSelectSegment}
+        missionSettings={missionSettings}
+        updateWaypointsWithHeadingSystem={updateWaypointsWithHeadingSystem}
+        setShowMultipleTargetsModal={setShowMultipleTargetsModal}
       />
       {dronePosition && (
         <RotatingDroneMarker position={dronePosition} heading={droneHeading} icon={droneIcon} />
