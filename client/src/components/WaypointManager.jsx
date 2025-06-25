@@ -28,10 +28,18 @@ export default function WaypointManager({
   missionSettings,
   updateWaypointsWithHeadingSystem,
   setShowMultipleTargetsModal,
+  isSettingHomeLocation,
 }) {
   useMapEvents({
     click: async (e) => {
       const { lat, lng } = e.latlng
+
+      // If we're setting home location, let the parent handle it
+      if (isSettingHomeLocation && onClick) {
+        onClick(lat, lng)
+        return
+      }
+
       let groundHeight = 0
       const height = 50
       let groundPosition
@@ -71,7 +79,7 @@ export default function WaypointManager({
         }
 
         if (updateWaypointsWithHeadingSystem) {
-          updateWaypointsWithHeadingSystem(newWaypoints, targets, [])
+          updateWaypointsWithHeadingSystem(newWaypoints, targets)
         } else {
           const headingResult = recalculateHeadings(
             newWaypoints,
@@ -138,7 +146,7 @@ export default function WaypointManager({
 
             // Use enhanced heading system if available, otherwise fallback
             if (updateWaypointsWithHeadingSystem) {
-              updateWaypointsWithHeadingSystem(updated, targets, [])
+              updateWaypointsWithHeadingSystem(updated, targets)
             } else {
               const headingResult = recalculateHeadings(updated, targets, missionSettings || {}, [])
               setWaypoints(
@@ -243,7 +251,7 @@ export default function WaypointManager({
 
             // Use enhanced heading system if available, otherwise fallback
             if (updateWaypointsWithHeadingSystem) {
-              updateWaypointsWithHeadingSystem(waypoints, updatedTargets, [])
+              updateWaypointsWithHeadingSystem(waypoints, updatedTargets)
             } else {
               const headingResult = recalculateHeadings(
                 waypoints,

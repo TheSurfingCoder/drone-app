@@ -1,5 +1,5 @@
 import React, { useRef, useImperativeHandle, useEffect, useState } from 'react'
-import { Viewer, Cesium3DTileset, Sun } from 'resium'
+import { Viewer, Cesium3DTileset, Sun, Entity } from 'resium'
 import {
   Ion,
   IonResource,
@@ -16,10 +16,11 @@ import {
   Matrix3,
   createWorldTerrainAsync,
   createWorldImageryAsync,
+  Color,
 } from 'cesium'
 import WaypointBillboardOverlay from './WaypointBillboardOverlay'
 import SegmentLinesOverlay from './SegmentLinesOverlay'
-import { recalculateHeadingsLegacy } from '../utils/recalculateHeadings'
+import { recalculateHeadings } from '../utils/recalculateHeadings'
 import TargetEntity from './TargetEntity'
 import config from '../config'
 import {
@@ -41,6 +42,9 @@ export default function CesiumMap({
   onCameraPositionChange,
   unitSystem,
   missionSettings,
+  homeLocation,
+  isSettingHomeLocation,
+  onMapClick,
 }) {
   const viewerRef = useRef(null)
   const [viewer, setViewer] = useState(null)
@@ -116,6 +120,12 @@ export default function CesiumMap({
       const lng = CesiumMath.toDegrees(carto.longitude)
       const groundHeight = carto.height ?? 0
 
+      // Call the parent's map click handler first
+      if (onMapClick) {
+        onMapClick(lat, lng)
+        return // Let the parent handle the logic
+      }
+
       const height = 50
       const groundPosition = pickedCartesian
       const elevatedPosition = Cartesian3.fromDegrees(lng, lat, groundHeight + height)
@@ -139,7 +149,7 @@ export default function CesiumMap({
               cornerRadius: 0.2, // Default corner radius per DJI SDK spec
             },
           ]
-          return recalculateHeadingsLegacy(updated, targets) // targets must be in scope
+          return recalculateHeadings(updated, targets, missionSettings, []).waypoints
         })
       }
 
@@ -162,7 +172,7 @@ export default function CesiumMap({
     return () => {
       handler.destroy()
     }
-  }, [viewer, googlePhotorealistic, setWaypoints, setTargets, targets])
+  }, [viewer, googlePhotorealistic, setWaypoints, setTargets, targets, onMapClick])
 
   useEffect(() => {
     if (!viewer) return
@@ -364,8 +374,6 @@ export default function CesiumMap({
 
   return (
     <div id="cesium map main div" className="relative w-full h-full bg-red-100">
-      {console.trace('🟥 CesiumMap wrapper div rendered')}
-
       <Viewer
         ref={viewerRef}
         className="h-full w-full z-0"
@@ -420,6 +428,31 @@ export default function CesiumMap({
           unitSystem={unitSystem}
           missionSettings={missionSettings}
         />
+        {homeLocation && (
+          <Entity
+            position={Cartesian3.fromDegrees(homeLocation.lng, homeLocation.lat, 0)}
+            point={{
+              pixelSize: 20,
+              color: Color.BLUE,
+              outlineColor: Color.WHITE,
+              outlineWidth: 2,
+            }}
+            label={{
+              text: 'Home',
+              font: '14pt sans-serif',
+              fillColor: Color.WHITE,
+              outlineColor: Color.BLACK,
+              outlineWidth: 2,
+              style: 1,
+              pixelOffset: new Cartesian3(0, -30),
+            }}
+          />
+        )}
+        {isSettingHomeLocation && (
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-[1000]">
+            Click on the map to set home location
+          </div>
+        )}
       </Viewer>
     </div>
   )

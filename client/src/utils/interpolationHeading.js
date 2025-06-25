@@ -7,5 +7,5 @@ export function calculateHeadingFromTo(from, to) {
   const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng)
 
   const heading = (Math.atan2(y, x) * 180) / Math.PI
-  return (heading + 360) % 360 // normalize
+  return ((heading + 180) % 360) - 180 // normalize
 }

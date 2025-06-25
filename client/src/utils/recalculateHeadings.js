@@ -288,11 +288,6 @@ export function recalculateHeadings(waypoints, targets, missionSettings = {}, ac
       }
     }
 
-    // Normalize heading to -180 to 180 range
-    if (heading !== null) {
-      heading = ((heading + 180) % 360) - 180
-    }
-
     return {
       ...wp,
       heading,

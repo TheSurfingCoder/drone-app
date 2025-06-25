@@ -12,11 +12,13 @@ import DesktopWaypointPanel from './DesktopWaypointPanel'
 import L from 'leaflet'
 import ModernStatusPillWrapper from './ModernStatusPillWrapper'
 import { useAuth } from '../contexts/AuthContext'
+import { useTimeline } from '../contexts/TimelineContext'
 import AuthModal from './AuthModal'
 import { UserIcon } from 'lucide-react'
 import { DesktopFlightPanel } from './DesktopFlightPanel'
 import MobileFlightPanel from './MobileFlightPanel'
 import { calculateDistance, estimateDuration } from '../utils/distanceUtils'
+import { recalculateHeadings } from '../utils/recalculateHeadings'
 import SaveFlightModal from './SaveFlightModal'
 import { supabase } from '../lib/supabase'
 import { DateTime } from 'luxon'
@@ -55,6 +57,9 @@ export default function MissionPlannerWrapper() {
   const [droneHeading, setDroneHeading] = useState(0)
   const droneHeadingRef = useRef(0)
 
+  // Timeline context
+  const { elements, removeElement, updateElement } = useTimeline()
+
   // POI guidance and confirmation state
   const [showPOIGuidance, setShowPOIGuidance] = useState(false)
   const [showPOIRemovalModal, setShowPOIRemovalModal] = useState(false)
@@ -80,6 +85,13 @@ export default function MissionPlannerWrapper() {
     gimbalPitchRotationEnabled: true, // Enable per-waypoint gimbal control
     headingMode: 'AUTO', // How aircraft faces during flight
     flightPathMode: 'NORMAL', // Flight path mode: 'NORMAL' or 'CURVED'
+    flightName: '', // Flight name for saving
+    homeLat: null, // Home location latitude
+    homeLng: null, // Home location longitude
+    droneType: '', // Selected drone type
+    batteryAction: 'return_home', // Action on low battery
+    batteryThreshold: 20, // Battery threshold percentage
+    signalLostAction: 'hover', // Action on signal loss
   })
 
   // Dynamic date/time/timezone state
@@ -88,6 +100,10 @@ export default function MissionPlannerWrapper() {
   const [currentTimezone, setCurrentTimezone] = useState('UTC')
 
   const lastCameraPosition = useRef(null)
+
+  // Home location state
+  const [homeLocation, setHomeLocation] = useState(null)
+  const [isSettingHomeLocation, setIsSettingHomeLocation] = useState(false)
 
   // Initialize with current UTC time and update every minute
   useEffect(() => {
@@ -221,8 +237,15 @@ export default function MissionPlannerWrapper() {
   }
 
   // Helper function to update waypoints with enhanced heading system
-  const updateWaypointsWithHeadingSystem = (newWaypoints) => {
-    setWaypoints(newWaypoints)
+  const updateWaypointsWithHeadingSystem = (newWaypoints, newTargets = targets) => {
+    // Recalculate headings using the proper utility function
+    const headingResult = recalculateHeadings(newWaypoints, newTargets, missionSettings, [])
+
+    // Update waypoints with calculated headings
+    setWaypoints(headingResult.waypoints)
+
+    // Update heading system with the result
+    setHeadingSystem(headingResult)
   }
 
   const handleWaypointHeadingChange = (waypointId, newHeading) => {
@@ -326,6 +349,13 @@ export default function MissionPlannerWrapper() {
       getActiveActuatorsAtTime: () => [],
       getMissionProgressAtTime: () => 0,
       getWaypointAtTime: () => ({ waypoint: null, segment: 0, progress: 0 }),
+    })
+
+    // Remove waypoint mission timeline elements when clearing waypoints
+    elements.forEach((element) => {
+      if (element.type === 'waypoint-mission') {
+        removeElement(element.id)
+      }
     })
   }
 
@@ -607,7 +637,8 @@ export default function MissionPlannerWrapper() {
     }))
 
     // Remove the target from targets array
-    setTargets([])
+    const updatedTargets = []
+    setTargets(updatedTargets)
 
     // Switch to Auto heading mode
     setMissionSettings((prev) => ({
@@ -616,7 +647,7 @@ export default function MissionPlannerWrapper() {
     }))
 
     // Update waypoints with new heading system
-    updateWaypointsWithHeadingSystem(updatedWaypoints)
+    updateWaypointsWithHeadingSystem(updatedWaypoints, updatedTargets)
 
     setShowPOIRemovalModal(false)
   }
@@ -647,7 +678,8 @@ export default function MissionPlannerWrapper() {
     }))
 
     // Remove the target from targets array
-    setTargets([])
+    const updatedTargets = []
+    setTargets(updatedTargets)
 
     // Switch to Auto heading mode
     setMissionSettings((prev) => ({
@@ -656,13 +688,63 @@ export default function MissionPlannerWrapper() {
     }))
 
     // Update waypoints with new heading system
-    updateWaypointsWithHeadingSystem(updatedWaypoints)
+    updateWaypointsWithHeadingSystem(updatedWaypoints, updatedTargets)
+  }
+
+  // Handle setting home location
+  const handleSetHomeLocation = () => {
+    setIsSettingHomeLocation(true)
+    // The actual placement will be handled by map click events
+  }
+
+  // Handle map click for home location placement
+  const handleMapClick = (lat, lng) => {
+    if (isSettingHomeLocation) {
+      setHomeLocation({ lat, lng })
+      setMissionSettings((prev) => ({
+        ...prev,
+        homeLat: lat,
+        homeLng: lng,
+      }))
+      setIsSettingHomeLocation(false)
+      return
+    }
+
+    // Existing waypoint/target placement logic
+    if (mapMode === 'waypoint') {
+      const newWaypoint = {
+        id: Date.now() + Math.random(),
+        lat,
+        lng,
+        height: 50,
+        heading: null,
+        pitch: 0,
+        speed: missionSettings.autoFlightSpeed,
+        cornerRadius: 0.2,
+        turnMode: 'CLOCKWISE',
+        groundHeight: 0,
+        groundPosition: Cartesian3.fromDegrees(lng, lat, 0),
+        elevatedPosition: Cartesian3.fromDegrees(lng, lat, 50),
+      }
+      setWaypoints((prev) => [...prev, newWaypoint])
+    } else if (mapMode === 'target') {
+      const newTarget = {
+        id: Date.now() + Math.random(),
+        lat,
+        lng,
+        name: `Target ${targets.length + 1}`,
+      }
+      setTargets((prev) => [...prev, newTarget])
+    }
   }
 
   // Update heading system when mission settings change
   useEffect(() => {
     if (Array.isArray(waypoints) && waypoints.length > 0) {
-      updateWaypointsWithHeadingSystem(waypoints)
+      // Recalculate headings when mission settings change
+      const headingResult = recalculateHeadings(waypoints, targets, missionSettings, [])
+      setWaypoints(headingResult.waypoints)
+      setHeadingSystem(headingResult)
     }
   }, [missionSettings.headingMode, missionSettings.autoFlightSpeed])
 
@@ -672,6 +754,34 @@ export default function MissionPlannerWrapper() {
       setShowPOIGuidance(false)
     }
   }, [targets.length, showPOIGuidance])
+
+  // Update waypoint mission timeline elements when waypoints change
+  useEffect(() => {
+    // Only update timeline elements if there are waypoints and timeline elements exist
+    if (waypoints.length > 0 && elements.length > 0) {
+      elements.forEach((element) => {
+        if (element.type === 'waypoint-mission') {
+          // Only update if the waypoints have actually changed
+          const currentWaypointIds = element.config?.waypoints?.map((wp) => wp.id) || []
+          const newWaypointIds = waypoints.map((wp) => wp.id)
+
+          // Check if waypoint IDs have changed (indicating waypoints were added/removed)
+          const waypointsChanged =
+            currentWaypointIds.length !== newWaypointIds.length ||
+            currentWaypointIds.some((id, index) => id !== newWaypointIds[index])
+
+          if (waypointsChanged) {
+            updateElement(element.id, {
+              config: {
+                ...element.config,
+                waypoints: waypoints.map((wp) => ({ ...wp })),
+              },
+            })
+          }
+        }
+      })
+    }
+  }, [waypoints.length, elements.length, updateElement]) // Only depend on lengths, not the full arrays
 
   return (
     <div className="relative w-screen h-screen ">
@@ -766,11 +876,13 @@ export default function MissionPlannerWrapper() {
             setIsDesktopCollapsed={setIsDesktopCollapsed}
             isMobile={isMobile}
             isDesktop={isDesktop}
-            onClick={handleSelectWaypoint}
+            onClick={handleMapClick}
             droneHeading={droneHeading}
             missionSettings={missionSettings}
             updateWaypointsWithHeadingSystem={updateWaypointsWithHeadingSystem}
             setShowMultipleTargetsModal={setShowMultipleTargetsModal}
+            homeLocation={homeLocation}
+            isSettingHomeLocation={isSettingHomeLocation}
           />
         ) : (
           <CesiumMap
@@ -785,6 +897,9 @@ export default function MissionPlannerWrapper() {
             onCameraPositionChange={updateTimezoneFromCamera}
             unitSystem={unitSystem}
             missionSettings={missionSettings}
+            homeLocation={homeLocation}
+            isSettingHomeLocation={isSettingHomeLocation}
+            onMapClick={handleMapClick}
           />
         )}
       </div>
@@ -845,7 +960,7 @@ export default function MissionPlannerWrapper() {
                   }))
 
                   // Update waypoints with new heading system
-                  updateWaypointsWithHeadingSystem(updatedWaypoints)
+                  updateWaypointsWithHeadingSystem(updatedWaypoints, newTargets)
                   setTargetPendingFocus(null)
                   setShowTargetModal(false)
                 }}
@@ -864,6 +979,7 @@ export default function MissionPlannerWrapper() {
         onModeChange={setMapMode}
         currentMode={mapMode}
         onSave={() => setShowSaveModal(true)}
+        onSetHomeLocation={handleSetHomeLocation}
       />
       {isMobile && (
         <div className="fixed bottom-0 left-0 right-0 z-999">
@@ -907,6 +1023,7 @@ export default function MissionPlannerWrapper() {
             targets={targets}
             headingSystem={headingSystem}
             onRemoveTarget={handleRemoveTarget}
+            clearWaypoints={clearWaypoints}
           />
         </div>
       )}

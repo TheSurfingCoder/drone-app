@@ -17,9 +17,12 @@ import {
   Zap,
   AlertTriangle,
   CheckCircle,
+  Clock,
+  Globe,
 } from 'lucide-react'
 import { getHeadingControlState } from '../utils/headingUtils'
 import { validateMissionUpload } from '../utils/missionValidation'
+import TimelineTab from './TimelineTab'
 
 export default function DesktopWaypointPanel({
   waypoints,
@@ -39,8 +42,10 @@ export default function DesktopWaypointPanel({
   targets,
   headingSystem,
   onRemoveTarget,
+  clearWaypoints,
 }) {
-  const [activeTab, setActiveTab] = useState('settings') // 'settings', 'waypoints', 'actions', 'target', 'timeline'
+  const [rootView, setRootView] = useState('root') // 'root', 'waypoint-panel'
+  const [activeTab, setActiveTab] = useState('global-settings') // 'settings', 'waypoints', 'actions', 'target', 'timeline'
   const [showTooltip, setShowTooltip] = useState(null)
   const [actions, setActions] = useState([
     {
@@ -779,124 +784,6 @@ export default function DesktopWaypointPanel({
             </div>
           </div>
         )
-      case 'timeline':
-        return (
-          <div className="flex-1 overflow-y-auto p-4">
-            <div className="space-y-4">
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Mission Timeline</h3>
-                {headingSystem.timeline.length > 0 ? (
-                  <div className="space-y-2">
-                    {headingSystem.timeline.map((segment, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <span className="font-mono text-gray-600">WP {index + 1}</span>
-                          <span className="text-gray-500">→</span>
-                          {index < headingSystem.timeline.length - 1 && (
-                            <span className="font-mono text-gray-600">WP {index + 2}</span>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <div className="font-mono text-gray-600">{segment.time.toFixed(1)}s</div>
-                          <div className="text-gray-500">
-                            {(segment.segmentDistance || 0).toFixed(1)}m
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <div className="flex justify-between text-xs">
-                        <span className="font-medium text-gray-700">Total Duration:</span>
-                        <span className="font-mono text-gray-600">
-                          {headingSystem.timeline[headingSystem.timeline.length - 1]?.time.toFixed(
-                            1,
-                          )}
-                          s
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="font-medium text-gray-700">Total Distance:</span>
-                        <span className="font-mono text-gray-600">
-                          {(
-                            headingSystem.timeline[headingSystem.timeline.length - 1]?.distance || 0
-                          ).toFixed(1)}
-                          m
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500">No waypoints to display timeline</p>
-                )}
-              </div>
-
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Heading Information</h3>
-                {waypoints.length > 0 ? (
-                  <div className="space-y-2">
-                    {waypoints.map((wp, index) => (
-                      <div
-                        key={wp.id}
-                        className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <span className="font-mono text-gray-600">WP {index + 1}</span>
-                          <span className="text-gray-500">→</span>
-                          <span className="font-mono text-gray-600">
-                            {wp.heading !== null ? `${wp.heading.toFixed(1)}°` : '—'}
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-xs text-gray-500 capitalize">
-                            {wp.headingSource || 'auto'}
-                          </div>
-                          {wp.actuatorOverrides && wp.actuatorOverrides.length > 0 && (
-                            <div className="text-xs text-yellow-600">
-                              {wp.actuatorOverrides.length} override(s)
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500">No waypoints to display heading info</p>
-                )}
-              </div>
-
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Real-time Simulation</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="range"
-                      min="0"
-                      max={headingSystem.timeline[headingSystem.timeline.length - 1]?.time || 0}
-                      step="0.1"
-                      value="0"
-                      onChange={(e) => {
-                        const timestamp = parseFloat(e.target.value)
-                        const simulation = headingSystem.getHeadingAtTime(timestamp)
-                        const waypoint = headingSystem.getWaypointAtTime(timestamp)
-
-                        // TODO: Implement drone position simulation
-                        console.log('Simulation at', timestamp, 's:', simulation, waypoint)
-                      }}
-                      className="flex-1"
-                    />
-                    <span className="text-xs text-gray-600 w-16">0.0s</span>
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Drag to simulate mission progress and see real-time heading calculations
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )
       case 'actions':
         return (
           <div className="flex-1 overflow-y-auto p-4">
@@ -1179,14 +1066,504 @@ export default function DesktopWaypointPanel({
             </div>
           </div>
         )
+      case 'global-settings':
+        return (
+          <div className="p-4 space-y-6">
+            {/* Flight Information Section */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <Globe size={18} className="mr-2 text-blue-500" />
+                Flight Information
+              </h3>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Flight Name *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Beach Survey Flight"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={missionSettings.flightName || ''}
+                    onChange={(e) => onMissionSettingChange('flightName', e.target.value)}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Identifies the mission when saving flights
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Home Location Section */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Home Location</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Defines the return point for RTH (Return to Home)
+              </p>
+
+              {missionSettings.homeLat && missionSettings.homeLng ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Latitude</label>
+                    <div className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-700">
+                      {missionSettings.homeLat.toFixed(6)}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Longitude
+                    </label>
+                    <div className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-700">
+                      {missionSettings.homeLng.toFixed(6)}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                  <p className="text-gray-500 text-sm">
+                    Click the home icon in the toolbar, then click on the map to set home location
+                  </p>
+                </div>
+              )}
+              <p className="text-xs text-gray-500 mt-2">
+                Use the home icon in the toolbar to set location on map
+              </p>
+            </div>
+
+            {/* Drone Type Selection */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Drone Type</h3>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Drone Model
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={missionSettings.droneType || ''}
+                  onChange={(e) => onMissionSettingChange('droneType', e.target.value)}
+                >
+                  <option value="">Select a drone model</option>
+
+                  {/* Enterprise */}
+                  <optgroup label="Enterprise">
+                    <option value="M350_RTK">M350 RTK</option>
+                    <option value="M300_RTK">M300 RTK</option>
+                    <option value="MAVIC_2_ENTERPRISE_ADVANCED">MAVIC 2 Enterprise Advanced</option>
+                    <option value="MAVIC_2_ENTERPRISE_DUAL">MAVIC 2 Enterprise Dual</option>
+                    <option value="MAVIC_2_ENTERPRISE">MAVIC 2 ENTERPRISE</option>
+                  </optgroup>
+
+                  {/* Consumer */}
+                  <optgroup label="Consumer">
+                    <option value="DJI_MINI_2">DJI MINI 2</option>
+                    <option value="DJI_MINI_SE">DJI MINI SE</option>
+                    <option value="DJI_AIR_2S">DJI AIR 2S</option>
+                    <option value="MAVIC_AIR_2">MAVIC AIR 2</option>
+                    <option value="MAVIC_MINI">MAVIC MINI</option>
+                    <option value="MAVIC_2_SERIES">MAVIC 2 SERIES</option>
+                    <option value="MAVIC_AIR">MAVIC AIR</option>
+                    <option value="MAVIC_PRO">MAVIC PRO</option>
+                    <option value="SPARK">SPARK</option>
+                  </optgroup>
+
+                  {/* Professional */}
+                  <optgroup label="Professional">
+                    <option value="P4_MULTISPECTRAL">P4 Multispectral</option>
+                    <option value="PHANTOM_4_RTK">PHANTOM 4 RTK</option>
+                    <option value="PHANTOM_4_PRO_V2">PHANTOM 4 PRO V2</option>
+                    <option value="PHANTOM_4">PHANTOM 4</option>
+                  </optgroup>
+
+                  {/* Phantom 3 Series */}
+                  <optgroup label="Phantom 3 Series">
+                    <option value="PHANTOM_3_PROFESSIONAL">PHANTOM 3 PROFESSIONAL</option>
+                    <option value="PHANTOM_3_ADVANCED">PHANTOM 3 ADVANCED</option>
+                    <option value="PHANTOM_3_STANDARD">PHANTOM 3 STANDARD</option>
+                    <option value="PHANTOM_3_4K">PHANTOM 3 4K</option>
+                  </optgroup>
+
+                  {/* Industrial */}
+                  <optgroup label="Industrial">
+                    <option value="INSPIRE_2">INSPIRE 2</option>
+                    <option value="INSPIRE_1_PRO">INSPIRE 1 PRO</option>
+                    <option value="INSPIRE_1">INSPIRE 1</option>
+                    <option value="M200_V2">M200 V2</option>
+                    <option value="M210_RTK_V2">M210 RTK V2</option>
+                    <option value="MATRICE_600_PRO">MATRICE 600 PRO</option>
+                    <option value="MATRICE_600">MATRICE 600</option>
+                    <option value="MATRICE_100">MATRICE 100</option>
+                  </optgroup>
+                </select>
+              </div>
+            </div>
+
+            {/* Battery Power Level Trigger */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Battery Power Level Trigger
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Safety threshold for battery-critical actions
+              </p>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Action on Low Battery
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={missionSettings.batteryAction || 'return_home'}
+                    onChange={(e) => onMissionSettingChange('batteryAction', e.target.value)}
+                  >
+                    <option value="return_home">Return to Home</option>
+                    <option value="land">Land</option>
+                    <option value="stop_timeline">Stop Timeline</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Battery Level Threshold (%)
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={missionSettings.batteryThreshold || 20}
+                    onChange={(e) =>
+                      onMissionSettingChange('batteryThreshold', parseInt(e.target.value))
+                    }
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>0%</span>
+                    <span className="font-medium">{missionSettings.batteryThreshold || 20}%</span>
+                    <span>100%</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Recommended: 20-30%</p>
+                </div>
+              </div>
+            </div>
+
+            {/* RC Signal Lost Behavior */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">RC Signal Lost Behavior</h3>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Action on Signal Loss
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={missionSettings.signalLostAction || 'hover'}
+                  onChange={(e) => onMissionSettingChange('signalLostAction', e.target.value)}
+                >
+                  <option value="hover">Hover: Maintain position</option>
+                  <option value="landing">Landing: Initiate automatic landing</option>
+                  <option value="return_home">Return to Home: Return to home point</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )
       default:
         return null
     }
   }
 
+  // Render root view or waypoint panel
+  if (rootView === 'root') {
+    return (
+      <div
+        className={`absolute top-[50px] right-0 bottom-0 h-[calc(100%-50px)] md:block transition-all duration-300 ease-out ${
+          isDesktopCollapsed ? 'translate-x-full' : 'translate-x-0'
+        }`}
+      >
+        <button
+          onClick={() => setIsDesktopCollapsed(!isDesktopCollapsed)}
+          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full bg-white hover:bg-gray-50 rounded-l-lg shadow-lg p-2 transition-all duration-200 border border-r-0 border-gray-200"
+        >
+          <ChevronLeftIcon size={20} className="text-gray-600" />
+        </button>
+
+        <div className="w-[400px] h-full bg-white rounded-l-xl shadow-2xl border-l border-gray-200 flex flex-col">
+          {/* Root Tab Navigation */}
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800">Mission Control</h2>
+              <button
+                onClick={() => setIsDesktopCollapsed(true)}
+                className="p-1 hover:bg-white/50 rounded-full transition-colors duration-200"
+              >
+                <XIcon size={18} className="text-gray-500" />
+              </button>
+            </div>
+
+            {/* Root Tab Buttons */}
+            <div className="flex space-x-0.5">
+              <button
+                onClick={() => setActiveTab('global-settings')}
+                className={`flex-1 flex items-center justify-center space-x-1 px-2 py-2 rounded-lg font-medium text-xs transition-all duration-200 ${
+                  activeTab === 'global-settings'
+                    ? 'bg-blue-500 text-white shadow-md'
+                    : 'bg-white/70 text-gray-600 hover:bg-white hover:text-gray-800'
+                }`}
+              >
+                <Globe size={14} />
+                <span>Global Settings</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('timeline')}
+                className={`flex-1 flex items-center justify-center space-x-1 px-2 py-2 rounded-lg font-medium text-xs transition-all duration-200 ${
+                  activeTab === 'timeline'
+                    ? 'bg-blue-500 text-white shadow-md'
+                    : 'bg-white/70 text-gray-600 hover:bg-white hover:text-gray-800'
+                }`}
+              >
+                <Clock size={14} />
+                <span>Timeline</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Root Tab Content */}
+          <div className="flex-1 overflow-y-auto">
+            {activeTab === 'global-settings' && (
+              <div className="p-4 space-y-6">
+                {/* Flight Information Section */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <Globe size={18} className="mr-2 text-blue-500" />
+                    Flight Information
+                  </h3>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Flight Name *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Beach Survey Flight"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={missionSettings.flightName || ''}
+                        onChange={(e) => onMissionSettingChange('flightName', e.target.value)}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Identifies the mission when saving flights
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Home Location Section */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Home Location</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Defines the return point for RTH (Return to Home)
+                  </p>
+
+                  {missionSettings.homeLat && missionSettings.homeLng ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Latitude
+                        </label>
+                        <div className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-700">
+                          {missionSettings.homeLat.toFixed(6)}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Longitude
+                        </label>
+                        <div className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-700">
+                          {missionSettings.homeLng.toFixed(6)}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                      <p className="text-gray-500 text-sm">
+                        Click the home icon in the toolbar, then click on the map to set home
+                        location
+                      </p>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500 mt-2">
+                    Use the home icon in the toolbar to set location on map
+                  </p>
+                </div>
+
+                {/* Drone Type Selection */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Drone Type</h3>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Drone Model
+                    </label>
+                    <select
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={missionSettings.droneType || ''}
+                      onChange={(e) => onMissionSettingChange('droneType', e.target.value)}
+                    >
+                      <option value="">Select a drone model</option>
+
+                      {/* Enterprise */}
+                      <optgroup label="Enterprise">
+                        <option value="M350_RTK">M350 RTK</option>
+                        <option value="M300_RTK">M300 RTK</option>
+                        <option value="MAVIC_2_ENTERPRISE_ADVANCED">
+                          MAVIC 2 Enterprise Advanced
+                        </option>
+                        <option value="MAVIC_2_ENTERPRISE_DUAL">MAVIC 2 Enterprise Dual</option>
+                        <option value="MAVIC_2_ENTERPRISE">MAVIC 2 ENTERPRISE</option>
+                      </optgroup>
+
+                      {/* Consumer */}
+                      <optgroup label="Consumer">
+                        <option value="DJI_MINI_2">DJI MINI 2</option>
+                        <option value="DJI_MINI_SE">DJI MINI SE</option>
+                        <option value="DJI_AIR_2S">DJI AIR 2S</option>
+                        <option value="MAVIC_AIR_2">MAVIC AIR 2</option>
+                        <option value="MAVIC_MINI">MAVIC MINI</option>
+                        <option value="MAVIC_2_SERIES">MAVIC 2 SERIES</option>
+                        <option value="MAVIC_AIR">MAVIC AIR</option>
+                        <option value="MAVIC_PRO">MAVIC PRO</option>
+                        <option value="SPARK">SPARK</option>
+                      </optgroup>
+
+                      {/* Professional */}
+                      <optgroup label="Professional">
+                        <option value="P4_MULTISPECTRAL">P4 Multispectral</option>
+                        <option value="PHANTOM_4_RTK">PHANTOM 4 RTK</option>
+                        <option value="PHANTOM_4_PRO_V2">PHANTOM 4 PRO V2</option>
+                        <option value="PHANTOM_4">PHANTOM 4</option>
+                      </optgroup>
+
+                      {/* Phantom 3 Series */}
+                      <optgroup label="Phantom 3 Series">
+                        <option value="PHANTOM_3_PROFESSIONAL">PHANTOM 3 PROFESSIONAL</option>
+                        <option value="PHANTOM_3_ADVANCED">PHANTOM 3 ADVANCED</option>
+                        <option value="PHANTOM_3_STANDARD">PHANTOM 3 STANDARD</option>
+                        <option value="PHANTOM_3_4K">PHANTOM 3 4K</option>
+                      </optgroup>
+
+                      {/* Industrial */}
+                      <optgroup label="Industrial">
+                        <option value="INSPIRE_2">INSPIRE 2</option>
+                        <option value="INSPIRE_1_PRO">INSPIRE 1 PRO</option>
+                        <option value="INSPIRE_1">INSPIRE 1</option>
+                        <option value="M200_V2">M200 V2</option>
+                        <option value="M210_RTK_V2">M210 RTK V2</option>
+                        <option value="MATRICE_600_PRO">MATRICE 600 PRO</option>
+                        <option value="MATRICE_600">MATRICE 600</option>
+                        <option value="MATRICE_100">MATRICE 100</option>
+                      </optgroup>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Battery Power Level Trigger */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                    Battery Power Level Trigger
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Safety threshold for battery-critical actions
+                  </p>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Action on Low Battery
+                      </label>
+                      <select
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={missionSettings.batteryAction || 'return_home'}
+                        onChange={(e) => onMissionSettingChange('batteryAction', e.target.value)}
+                      >
+                        <option value="return_home">Return to Home</option>
+                        <option value="land">Land</option>
+                        <option value="stop_timeline">Stop Timeline</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Battery Level Threshold (%)
+                      </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={missionSettings.batteryThreshold || 20}
+                        onChange={(e) =>
+                          onMissionSettingChange('batteryThreshold', parseInt(e.target.value))
+                        }
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>0%</span>
+                        <span className="font-medium">
+                          {missionSettings.batteryThreshold || 20}%
+                        </span>
+                        <span>100%</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">Recommended: 20-30%</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* RC Signal Lost Behavior */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                    RC Signal Lost Behavior
+                  </h3>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Action on Signal Loss
+                    </label>
+                    <select
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={missionSettings.signalLostAction || 'hover'}
+                      onChange={(e) => onMissionSettingChange('signalLostAction', e.target.value)}
+                    >
+                      <option value="hover">Hover: Maintain position</option>
+                      <option value="landing">Landing: Initiate automatic landing</option>
+                      <option value="return_home">Return to Home: Return to home point</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'timeline' && (
+              <TimelineTab
+                waypoints={waypoints}
+                onSetRootView={setRootView}
+                clearWaypoints={clearWaypoints}
+                setActiveTab={setActiveTab}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Original waypoint panel view
   return (
     <div
-      className={` absolute top-[50px] right-0 bottom-0 h-[calc(100%-50px)] md:block transition-all duration-300 ease-out ${
+      className={`absolute top-[50px] right-0 bottom-0 h-[calc(100%-50px)] md:block transition-all duration-300 ease-out ${
         isDesktopCollapsed ? 'translate-x-full' : 'translate-x-0'
       }`}
     >
@@ -1201,7 +1578,18 @@ export default function DesktopWaypointPanel({
         {/* Tab Navigation */}
         <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">Mission Panel</h2>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => {
+                  setRootView('root')
+                  setActiveTab('timeline')
+                }}
+                className="p-1 hover:bg-white/50 rounded-full transition-colors duration-200"
+              >
+                <ChevronLeftIcon size={16} className="text-gray-500" />
+              </button>
+              <h2 className="text-lg font-semibold text-gray-800">Waypoint Panel</h2>
+            </div>
             <button
               onClick={() => setIsDesktopCollapsed(true)}
               className="p-1 hover:bg-white/50 rounded-full transition-colors duration-200"
@@ -1263,18 +1651,6 @@ export default function DesktopWaypointPanel({
             >
               <TargetIcon size={14} />
               <span>Targets</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('timeline')}
-              className={`flex-1 flex items-center justify-center space-x-1 px-2 py-2 rounded-lg font-medium text-xs transition-all duration-200 ${
-                activeTab === 'timeline'
-                  ? 'bg-blue-500 text-white shadow-md'
-                  : 'bg-white/70 text-gray-600 hover:bg-white hover:text-gray-800'
-              }`}
-            >
-              <Play size={14} />
-              <span>Timeline</span>
             </button>
           </div>
         </div>

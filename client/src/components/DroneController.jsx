@@ -33,7 +33,7 @@ export default function DroneController({
   const headingStateRef = useRef({ segmentId: null, start: 0, end: 0 })
 
   function normalizeHeading(deg) {
-    return ((deg % 360) + 360) % 360
+    return ((deg + 180) % 360) - 180
   }
 
   function lerpAngleShortest(start, end, t) {
