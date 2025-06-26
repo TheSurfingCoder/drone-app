@@ -43,6 +43,7 @@ export default function DesktopWaypointPanel({
   headingSystem,
   onRemoveTarget,
   clearWaypoints,
+  onSave,
 }) {
   const [rootView, setRootView] = useState('root') // 'root', 'waypoint-panel'
   const [activeTab, setActiveTab] = useState('global-settings') // 'settings', 'waypoints', 'actions', 'target', 'timeline'
@@ -1295,12 +1296,21 @@ export default function DesktopWaypointPanel({
           <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-800">Mission Control</h2>
-              <button
-                onClick={() => setIsDesktopCollapsed(true)}
-                className="p-1 hover:bg-white/50 rounded-full transition-colors duration-200"
-              >
-                <XIcon size={18} className="text-gray-500" />
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={onSave}
+                  disabled={!missionSettings.flightName || waypoints.length < 2}
+                  className="px-3 py-1.5 bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  Save Mission
+                </button>
+                <button
+                  onClick={() => setIsDesktopCollapsed(true)}
+                  className="p-1 hover:bg-white/50 rounded-full transition-colors duration-200"
+                >
+                  <XIcon size={18} className="text-gray-500" />
+                </button>
+              </div>
             </div>
 
             {/* Root Tab Buttons */}

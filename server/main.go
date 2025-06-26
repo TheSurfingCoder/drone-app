@@ -100,6 +100,7 @@ func main() {
 	// Get database and collection
 	db := client.Database("drone_planner")
 	flightsCollection := db.Collection("flights")
+	missionsCollection := db.Collection("missions")  // Add missions collection
 	log.Println("Database and collection initialized")
 
 	// Create router
@@ -109,25 +110,10 @@ func main() {
 	// Create handlers
 	flightHandler := handlers.NewFlightHandler(flightsCollection)
 	timezoneHandler := handlers.NewTimezoneHandler()
+	missionHandler := handlers.NewMissionHandler(missionsCollection)
 	log.Println("Handlers initialized")
 
-	// API routes
-	api := r.PathPrefix("/api").Subrouter()
-
-	// Flight routes
-	api.HandleFunc("/flights", flightHandler.CreateFlight).Methods("POST")
-	api.HandleFunc("/flights", flightHandler.GetFlights).Methods("GET")
-	api.HandleFunc("/flights/{id}", flightHandler.GetFlight).Methods("GET")
-	api.HandleFunc("/flights/{id}", flightHandler.UpdateFlight).Methods("PUT")
-	api.HandleFunc("/flights/{id}", flightHandler.DeleteFlight).Methods("DELETE")
-
-	// Add auth middleware to API routes
-	api.Use(handlers.AuthMiddleware)
-
-	// Timezone routes (no auth required) - moved to different path to avoid /api subrouter
-	r.HandleFunc("/timezone", timezoneHandler.GetTimezone).Methods("GET")
-	log.Println("API routes configured")
-
+	
 	// Add CORS middleware
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -146,6 +132,35 @@ func main() {
 		})
 	})
 	log.Println("CORS middleware configured")
+	
+	
+	
+	
+	// API routes
+	api := r.PathPrefix("/api").Subrouter()
+
+	// Flight routes
+	api.HandleFunc("/flights", flightHandler.CreateFlight).Methods("POST")
+	api.HandleFunc("/flights", flightHandler.GetFlights).Methods("GET")
+	api.HandleFunc("/flights/{id}", flightHandler.GetFlight).Methods("GET")
+	api.HandleFunc("/flights/{id}", flightHandler.UpdateFlight).Methods("PUT")
+	api.HandleFunc("/flights/{id}", flightHandler.DeleteFlight).Methods("DELETE")
+
+	// Mission routes (new)
+	api.HandleFunc("/missions", missionHandler.CreateMission).Methods("POST")
+	api.HandleFunc("/missions", missionHandler.GetMissions).Methods("GET")
+	api.HandleFunc("/missions/{id}", missionHandler.GetMission).Methods("GET")
+	api.HandleFunc("/missions/{id}", missionHandler.UpdateMission).Methods("PUT")
+	api.HandleFunc("/missions/{id}", missionHandler.DeleteMission).Methods("DELETE")
+
+	// Add auth middleware to API routes
+	api.Use(handlers.AuthMiddleware)
+
+	// Timezone routes (no auth required) - moved to different path to avoid /api subrouter
+	r.HandleFunc("/timezone", timezoneHandler.GetTimezone).Methods("GET")
+	log.Println("API routes configured")
+
+	
 
 	// Add panic recovery middleware
 	r.Use(func(next http.Handler) http.Handler {

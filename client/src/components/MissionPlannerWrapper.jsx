@@ -17,13 +17,13 @@ import AuthModal from './AuthModal'
 import { UserIcon } from 'lucide-react'
 import { DesktopFlightPanel } from './DesktopFlightPanel'
 import MobileFlightPanel from './MobileFlightPanel'
-import { calculateDistance, estimateDuration } from '../utils/distanceUtils'
 import { recalculateHeadings } from '../utils/recalculateHeadings'
-import SaveFlightModal from './SaveFlightModal'
 import { supabase } from '../lib/supabase'
 import { DateTime } from 'luxon'
 import POIGuidance from './POIGuidance'
 import POIRemovalModal from './POIRemovalModal'
+import CesiumDroneSimulation from './CesiumDroneSimulation'
+import { createMission, getMissions, deleteMission } from '../services/missionService'
 
 // Add flight data structure
 
@@ -52,7 +52,6 @@ export default function MissionPlannerWrapper() {
   const { user } = useAuth()
   const [showFlights, setShowFlights] = useState(false)
   const [savedFlights, setSavedFlights] = useState([])
-  const [showSaveModal, setShowSaveModal] = useState(false)
   const isDesktop = !isMobile
   const [droneHeading, setDroneHeading] = useState(0)
   const droneHeadingRef = useRef(0)
@@ -62,6 +61,7 @@ export default function MissionPlannerWrapper() {
   const [simulationType, setSimulationType] = useState(null) // '2d' or '3d'
   const [show3DCountdown, setShow3DCountdown] = useState(false)
   const [shouldCancelSimulation, setShouldCancelSimulation] = useState(false)
+  const [show3DSimulation, setShow3DSimulation] = useState(false)
 
   // Timeline context
   const { elements, removeElement, updateElement } = useTimeline()
@@ -110,6 +110,96 @@ export default function MissionPlannerWrapper() {
   // Home location state
   const [homeLocation, setHomeLocation] = useState(null)
   const [isSettingHomeLocation, setIsSettingHomeLocation] = useState(false)
+
+  // Add fetchMissions function (moved up to fix ESLint error)
+  const fetchMissions = async () => {
+    if (!user) {
+      return
+    }
+
+    try {
+      const missions = await getMissions(supabase)
+      setSavedFlights(missions) // Keep the same state variable for now
+    } catch (error) {
+      console.error('Error fetching missions:', error)
+    }
+  }
+
+  // Create mission data function (moved up to fix ESLint error)
+  const createMissionData = (waypoints, name) => {
+    // Convert Cesium waypoints to plain objects
+    const serializedWaypoints = waypoints
+      .map((wp, index) => {
+        if (typeof wp.lat === 'undefined' || typeof wp.lng === 'undefined') {
+          console.error(`Waypoint ${index} is missing lat/lng:`, wp)
+          return null
+        }
+
+        return {
+          id: `wp${index}`,
+          coordinate: {
+            latitude: wp.lat,
+            longitude: wp.lng,
+          },
+          altitude: wp.height || 0,
+          heading: wp.heading || 0,
+          gimbalPitch: wp.pitch || 0,
+          speed: wp.speed || 10,
+          cornerRadius: wp.cornerRadius || 0.2,
+          turnMode: 'CLOCKWISE',
+          actions: [],
+        }
+      })
+      .filter((wp) => wp !== null)
+
+    // Create timeline element for waypoint mission
+    const timelineElement = {
+      id: '1',
+      type: 'waypoint-mission',
+      order: 0,
+      config: {
+        autoFlightSpeed: missionSettings.autoFlightSpeed || 10,
+        maxFlightSpeed: missionSettings.maxFlightSpeed || 15,
+        finishedAction: missionSettings.finishedAction || 'GO_HOME',
+        repeatTimes: missionSettings.repeatTimes || 1,
+        globalTurnMode: missionSettings.globalTurnMode || 'CLOCKWISE',
+        gimbalPitchRotationEnabled: missionSettings.gimbalPitchRotationEnabled || true,
+        headingMode: missionSettings.headingMode || 'USING_WAYPOINT_HEADING',
+        flightPathMode: missionSettings.flightPathMode || 'NORMAL',
+        waypoints: serializedWaypoints,
+      },
+    }
+
+    const missionData = {
+      name: name,
+      timelineElements: [timelineElement],
+      globalSettings: {
+        batteryAction: missionSettings.batteryAction || 'GO_HOME',
+        batteryThreshold: missionSettings.batteryThreshold || 20,
+        signalLostAction: missionSettings.signalLostAction || 'GO_HOME',
+        droneType: missionSettings.droneType || 'DJI_Mavic_3',
+      },
+    }
+
+    return missionData
+  }
+
+  const handleSaveMission = async (name) => {
+    if (!user) {
+      console.error('No user logged in')
+      return
+    }
+
+    try {
+      const missionData = createMissionData(waypoints, name)
+      await createMission(missionData, supabase)
+
+      // Refresh missions list
+      await fetchMissions()
+    } catch (error) {
+      console.error('Error saving mission:', error)
+    }
+  }
 
   // Initialize with current UTC time and update every minute
   useEffect(() => {
@@ -365,142 +455,33 @@ export default function MissionPlannerWrapper() {
     })
   }
 
-  // Add fetchFlights function
-  const fetchFlights = async () => {
-    if (!user) {
-      return
-    }
-
-    try {
-      const response = await fetch('/api/flights', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (!response.ok) {
-        console.error('Response not OK:', response.status, response.statusText)
-        return
-      }
-
-      const flights = await response.json()
-
-      if (!Array.isArray(flights)) {
-        console.error('Expected array of flights, got:', typeof flights)
-        return
-      }
-
-      setSavedFlights(flights)
-    } catch (error) {
-      console.error('Error fetching flights:', error)
-    }
-  }
-
   // Fetch flights when user signs in
   useEffect(() => {
     if (user) {
-      fetchFlights()
+      fetchMissions()
     }
   }, [user])
 
   const handleAuthClick = () => {
     if (user) {
-      fetchFlights() // Fetch flights when opening the panel
+      fetchMissions() // Fetch flights when opening the panel
       setShowFlights(true)
     } else {
       setIsAuthModalOpen(true)
     }
   }
 
-  // Create flight data function (moved up to fix ESLint error)
-  const createFlightData = (waypoints, name) => {
-    // Convert Cesium waypoints to plain objects
-    const serializedWaypoints = waypoints
-      .map((wp, index) => {
-        // Safety check for required properties
-        if (typeof wp.lat === 'undefined' || typeof wp.lng === 'undefined') {
-          console.error(`Waypoint ${index} is missing lat/lng:`, wp)
-          return null
-        }
+  const handleLoadMission = (mission) => {
+    // Find the waypoint mission element
+    const waypointElement = mission.timelineElements.find((el) => el.type === 'waypoint-mission')
 
-        return {
-          coordinate: {
-            latitude: wp.lat,
-            longitude: wp.lng,
-          },
-          altitude: wp.height || 0,
-          heading: wp.heading || 0,
-          gimbalPitch: wp.pitch || 0,
-          speed: wp.speed || 10, // Use waypoint speed
-          cornerRadius: wp.cornerRadius || 0.2, // Use waypoint corner radius
-          turnMode: 'CLOCKWISE',
-          actions: [],
-        }
-      })
-      .filter((wp) => wp !== null) // Remove any null waypoints
-
-    // Calculate total distance and duration
-    const totalDistance = calculateDistance(waypoints)
-    const estimatedDuration = estimateDuration(waypoints) // Updated to not use segmentSpeeds
-
-    const flightData = {
-      name: name,
-      waypoints: serializedWaypoints,
-      missionSettings: missionSettings, // Include global mission settings
-      metadata: {
-        totalWaypoints: waypoints.length,
-        totalDistance: totalDistance,
-        estimatedDuration: estimatedDuration,
-      },
-      date: new Date().toISOString(),
-    }
-
-    return flightData
-  }
-
-  const handleSaveFlight = async (name) => {
-    if (!user) {
-      console.error('No user logged in')
+    if (!waypointElement || !waypointElement.config.waypoints) {
+      console.error('No waypoint mission found in mission data')
       return
     }
 
-    try {
-      const flightData = createFlightData(waypoints, name)
-
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession()
-      if (sessionError) throw sessionError
-      if (!session) throw new Error('No active session')
-
-      const response = await fetch('/api/flights', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(flightData),
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to save flight: ${response.status}`)
-      }
-
-      await response.json()
-
-      // Refresh flights list
-      await fetchFlights()
-      setShowSaveModal(false)
-    } catch (error) {
-      console.error('Error saving flight:', error)
-    }
-  }
-
-  const handleLoadFlight = (flight) => {
-    // Convert saved flight data back to Cesium objects
-    const loadedWaypoints = flight.waypoints.map((wp) => {
+    // Convert saved waypoint data back to Cesium objects
+    const loadedWaypoints = waypointElement.config.waypoints.map((wp) => {
       const waypoint = {
         id: Date.now() + Math.random(), // Generate new ID
         lat: wp.coordinate.latitude,
@@ -508,8 +489,8 @@ export default function MissionPlannerWrapper() {
         height: wp.altitude,
         heading: wp.heading,
         pitch: wp.gimbalPitch,
-        speed: wp.speed || 10, // Load waypoint speed
-        cornerRadius: wp.cornerRadius || 0.2, // Load waypoint corner radius
+        speed: wp.speed || 10,
+        cornerRadius: wp.cornerRadius || 0.2,
         turnMode: wp.turnMode,
         actions: wp.actions || [],
       }
@@ -531,43 +512,29 @@ export default function MissionPlannerWrapper() {
 
     setWaypoints(loadedWaypoints)
 
-    // Load mission settings if they exist
-    if (flight.missionSettings) {
-      setMissionSettings(flight.missionSettings)
+    // Load global settings if they exist
+    if (mission.globalSettings) {
+      setMissionSettings((prev) => ({
+        ...prev,
+        ...mission.globalSettings,
+      }))
     }
 
     setShowFlights(false)
   }
 
   // Add handleDeleteFlight function
-  const handleDeleteFlight = async (flightId) => {
+  const handleDeleteMission = async (missionId) => {
     if (!user) {
       console.error('No user logged in')
       return
     }
 
     try {
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession()
-      if (sessionError) throw sessionError
-      if (!session) throw new Error('No active session')
-
-      const response = await fetch(`/api/flights/${flightId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete flight: ${response.status}`)
-      }
-
-      await fetchFlights() // Refresh the list
+      await deleteMission(missionId, supabase)
+      await fetchMissions() // Refresh the list
     } catch (error) {
-      console.error('Error deleting flight:', error)
+      console.error('Error deleting mission:', error)
     }
   }
 
@@ -822,6 +789,10 @@ export default function MissionPlannerWrapper() {
       return
     }
 
+    if (shouldCancelSimulation) {
+      setShouldCancelSimulation(false)
+    }
+
     if (viewMode === '3d') {
       // Start 3D simulation
       console.log('🚁 Starting 3D simulation...')
@@ -835,6 +806,13 @@ export default function MissionPlannerWrapper() {
       setShowCountdown(true)
       setCountdownMessage('Starting in')
     }
+  }
+
+  const handle3DSimulationComplete = () => {
+    console.log('✅ 3D simulation completed')
+    setIsSimulating(false)
+    setSimulationType(null)
+    setShow3DSimulation(false)
   }
 
   return (
@@ -958,6 +936,7 @@ export default function MissionPlannerWrapper() {
             homeLocation={homeLocation}
             isSettingHomeLocation={isSettingHomeLocation}
             onMapClick={handleMapClick}
+            show3DSimulation={show3DSimulation}
           />
         )}
       </div>
@@ -985,16 +964,17 @@ export default function MissionPlannerWrapper() {
       {show3DCountdown && (
         <CountdownModal
           message={countdownMessage}
-          seconds={countdownMessage === 'Starting 3D simulation in' ? 3 : 2}
+          seconds={3}
           onComplete={() => {
+            console.log('🔍 3D countdown onComplete triggered')
             if (
               countdownMessage === 'Starting 3D simulation in' &&
               Array.isArray(waypoints) &&
               waypoints.length > 0
             ) {
               console.log('🚁 3D simulation countdown complete - starting simulation...')
-              // TODO: Start actual 3D simulation here in Phase 2
               setShow3DCountdown(false)
+              setShow3DSimulation(true)
             }
             setShow3DCountdown(false)
           }}
@@ -1056,7 +1036,6 @@ export default function MissionPlannerWrapper() {
         isMobile={isMobile}
         onModeChange={setMapMode}
         currentMode={mapMode}
-        onSave={() => setShowSaveModal(true)}
         onSetHomeLocation={handleSetHomeLocation}
       />
       {isMobile && (
@@ -1086,10 +1065,8 @@ export default function MissionPlannerWrapper() {
             waypoints={waypoints}
             selectedWaypoint={selectedWaypoint}
             onSelectWaypoint={handleSelectWaypoint}
-            onUpdateWaypoint={handleUpdateWaypoint}
             onDeleteWaypoint={handleDeleteWaypoint}
             onModeChange={setMapMode}
-            unitSystem={unitSystem}
             isDesktopCollapsed={isDesktopCollapsed}
             setIsDesktopCollapsed={setIsDesktopCollapsed}
             handleWaypointHeightChange={handleWaypointHeightChange}
@@ -1098,10 +1075,12 @@ export default function MissionPlannerWrapper() {
             handleWaypointHeadingChange={handleWaypointHeadingChange}
             missionSettings={missionSettings}
             onMissionSettingChange={handleMissionSettingChange}
+            unitSystem={unitSystem}
             targets={targets}
             headingSystem={headingSystem}
             onRemoveTarget={handleRemoveTarget}
             clearWaypoints={clearWaypoints}
+            onSave={() => handleSaveMission(missionSettings.flightName)}
           />
         </div>
       )}
@@ -1111,8 +1090,8 @@ export default function MissionPlannerWrapper() {
         <MobileFlightPanel
           onClose={() => setShowFlights(false)}
           flights={savedFlights}
-          onLoadFlight={handleLoadFlight}
-          onDeleteFlight={handleDeleteFlight}
+          onLoadFlight={handleLoadMission}
+          onDeleteFlight={handleDeleteMission}
           onSignOut={handleSignOut}
         />
       )}
@@ -1120,19 +1099,13 @@ export default function MissionPlannerWrapper() {
         <DesktopFlightPanel
           onClose={() => setShowFlights(false)}
           flights={savedFlights}
-          onLoadFlight={handleLoadFlight}
-          onDeleteFlight={handleDeleteFlight}
+          onLoadFlight={handleLoadMission}
+          onDeleteFlight={handleDeleteMission}
           onSignOut={handleSignOut}
         />
       )}
 
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
-
-      <SaveFlightModal
-        isOpen={showSaveModal}
-        onClose={() => setShowSaveModal(false)}
-        onSave={handleSaveFlight}
-      />
 
       {/* POI Guidance and Confirmation Modals */}
       <POIGuidance
@@ -1168,6 +1141,19 @@ export default function MissionPlannerWrapper() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 3D Simulation Component */}
+      {show3DSimulation && (
+        <CesiumDroneSimulation
+          waypoints={waypoints}
+          viewerRef={viewerRef}
+          setLogs={setLogs}
+          onSimulationComplete={handle3DSimulationComplete}
+          currentDate={currentDate}
+          currentTime={currentTime}
+          currentTimezone={currentTimezone}
+        />
       )}
     </div>
   )

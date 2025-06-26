@@ -1,25 +1,14 @@
 import React from 'react'
-import { DownloadIcon, UploadIcon, MapPinIcon, TargetIcon, HomeIcon } from 'lucide-react'
+import { MapPinIcon, TargetIcon, HomeIcon } from 'lucide-react'
 
 export default function QuickAccessToolbar({
   isMobile,
   isCompactMode,
   onModeChange,
   currentMode,
-  onSave,
   onSetHomeLocation,
 }) {
   const isTargetMode = currentMode === 'target'
-
-  const handleImportClick = () => {
-    // Import functionality will be implemented here
-  }
-
-  const handleFileExport = () => {
-    if (onSave) {
-      onSave()
-    }
-  }
 
   const handleSetHomeLocation = () => {
     if (onSetHomeLocation) {
@@ -63,8 +52,6 @@ export default function QuickAccessToolbar({
   return (
     <div className="fixed left-0 top-1/2 -translate-y-1/2 bg-white rounded-r-lg shadow-lg p-2 flex flex-col items-center space-y-3">
       <ModeToggle />
-      <ToolbarButton icon={UploadIcon} label="Import" onClick={handleImportClick} />
-      <ToolbarButton icon={DownloadIcon} label="Save & Export" onClick={handleFileExport} />
       <ToolbarButton icon={HomeIcon} label="Set Home Location" onClick={handleSetHomeLocation} />
     </div>
   )

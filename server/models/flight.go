@@ -28,22 +28,10 @@ type Flight struct {
 	UpdatedAt       time.Time          `bson:"updated_at" json:"updatedAt"`
 }
 
-// Waypoint represents a point in the flight path
-type Waypoint struct {
-	Coordinate  Coordinate `json:"coordinate" bson:"coordinate"`
-	Altitude    float64    `json:"altitude" bson:"altitude"`
-	Heading     float64    `json:"heading" bson:"heading"`
-	GimbalPitch float64    `json:"gimbalPitch" bson:"gimbalPitch"`
-	Speed       float64    `json:"speed" bson:"speed"`
-	TurnMode    string     `json:"turnMode" bson:"turnMode"`
-	Actions     []Action   `json:"actions" bson:"actions"`
-}
+
 
 // Coordinate represents a 2D position
-type Coordinate struct {
-	Latitude  float64 `json:"latitude" bson:"latitude"`
-	Longitude float64 `json:"longitude" bson:"longitude"`
-}
+
 
 // Action represents a waypoint action
 type Action struct {
@@ -92,3 +80,6 @@ func (f *Flight) ToJSON() map[string]interface{} {
 		"actions":         f.Actions,
 	}
 }
+
+
+// TODO: Delete this file - it appears to be unused or redundant

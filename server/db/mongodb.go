@@ -16,6 +16,7 @@ var (
 	database *mongo.Database
 	users    *mongo.Collection
 	flights  *mongo.Collection
+	missions *mongo.Collection
 )
 
 // Connect establishes a connection to MongoDB
@@ -48,6 +49,7 @@ func Connect() error {
 	database = client.Database("drone_planner")
 	users = database.Collection("users")
 	flights = database.Collection("flights")
+	missions = database.Collection("missions")
 
 	log.Println("Successfully connected to MongoDB!")
 	return nil
@@ -61,6 +63,10 @@ func GetUsersCollection() *mongo.Collection {
 // GetFlightsCollection returns the flights collection
 func GetFlightsCollection() *mongo.Collection {
 	return flights
+}
+
+func GetMissionsCollection() *mongo.Collection {
+	return missions
 }
 
 // Close closes the MongoDB connection

@@ -45,6 +45,7 @@ export default function CesiumMap({
   homeLocation,
   isSettingHomeLocation,
   onMapClick,
+  show3DSimulation,
 }) {
   const viewerRef = useRef(null)
   const [viewer, setViewer] = useState(null)
@@ -61,6 +62,24 @@ export default function CesiumMap({
     }, 200)
     return () => clearInterval(interval)
   }, [viewer])
+
+  // Add this useEffect for performance optimizations during 3D simulation
+  useEffect(() => {
+    if (!viewer) return
+
+    // Apply performance optimizations during 3D simulation
+    if (show3DSimulation) {
+      console.log('🔧 Applying 3D simulation performance optimizations')
+      viewer.shadows = false
+      viewer.scene.shadowMap.enabled = false
+      viewer.scene.globe.maximumScreenSpaceError = 8
+    } else {
+      // Restore normal quality when not simulating
+      viewer.shadows = true
+      viewer.scene.shadowMap.enabled = true
+      viewer.scene.globe.maximumScreenSpaceError = 4
+    }
+  }, [viewer, show3DSimulation])
 
   useEffect(() => {
     if (!viewer) return
