@@ -31,7 +31,7 @@ export default function MissionPlannerWrapper() {
   const [viewMode, setViewMode] = useState('2d')
   const [waypoints, setWaypoints] = useState([])
   const [unitSystem, setUnitSystem] = useState('metric')
-  const [dronePosition, setDronePosition] = useState(null) // SF default
+  const [dronePosition, setDronePosition] = useState(null)
   const [logs, setLogs] = useState([])
   const mapRef = useRef(null)
   const viewerRef = useRef(null)
@@ -56,6 +56,12 @@ export default function MissionPlannerWrapper() {
   const isDesktop = !isMobile
   const [droneHeading, setDroneHeading] = useState(0)
   const droneHeadingRef = useRef(0)
+
+  // Simulation state management
+  const [isSimulating, setIsSimulating] = useState(false)
+  const [simulationType, setSimulationType] = useState(null) // '2d' or '3d'
+  const [show3DCountdown, setShow3DCountdown] = useState(false)
+  const [shouldCancelSimulation, setShouldCancelSimulation] = useState(false)
 
   // Timeline context
   const { elements, removeElement, updateElement } = useTimeline()
@@ -783,6 +789,54 @@ export default function MissionPlannerWrapper() {
     }
   }, [waypoints.length, elements.length, updateElement]) // Only depend on lengths, not the full arrays
 
+  // Handle view mode changes and cancel ongoing simulations
+  const handleViewModeChange = (newViewMode) => {
+    // Always cancel any ongoing simulation or countdown when switching view modes
+    console.log(`🔄 Switching from ${viewMode} to ${newViewMode} - canceling all simulations`)
+    console.log('Current state:', { isSimulating, simulationType, showCountdown, show3DCountdown })
+
+    // Cancel any ongoing simulation
+    if (isSimulating) {
+      console.log(`🛑 Cancelling ${simulationType} simulation due to view mode change`)
+      setIsSimulating(false)
+      setSimulationType(null)
+    }
+
+    // Always cancel both countdown states
+    console.log('🛑 Canceling both countdown states')
+    setShowCountdown(false)
+    setShow3DCountdown(false)
+    setDronePosition(null)
+    setDroneHeading(0)
+    setShouldCancelSimulation(true) // Signal to cancel simulation
+
+    console.log('🛑 Setting shouldCancelSimulation = true', shouldCancelSimulation)
+
+    setViewMode(newViewMode)
+  }
+
+  const handleStartSimulation = () => {
+    if (!waypoints || waypoints.length === 0) {
+      setCountdownMessage('There are no waypoints. Please click on the map to set some.')
+      setShowCountdown(true)
+      return
+    }
+
+    if (viewMode === '3d') {
+      // Start 3D simulation
+      console.log('🚁 Starting 3D simulation...')
+      setIsSimulating(true)
+      setSimulationType('3d')
+      setShow3DCountdown(true)
+      setCountdownMessage('Starting 3D simulation in')
+    } else {
+      // Start 2D simulation
+      console.log('🗺️ Starting 2D simulation...')
+      setShowCountdown(true)
+      setCountdownMessage('Starting in')
+    }
+  }
+
   return (
     <div className="relative w-screen h-screen ">
       {/* 🧭 Top Bar */}
@@ -809,12 +863,16 @@ export default function MissionPlannerWrapper() {
             setDroneHeading={setDroneHeading}
             droneHeading={droneHeading}
             missionSettings={missionSettings}
+            viewMode={viewMode}
+            onStartSimulation={handleStartSimulation}
+            shouldCancelSimulation={shouldCancelSimulation}
+            setShouldCancelSimulation={setShouldCancelSimulation}
           />
         </div>
         <div className="flex items-center space-x-4">
           <button
             className="bg-blue-600 text-white px-3 py-0 rounded text-xs sm:text-base"
-            onClick={() => setViewMode(viewMode === '2d' ? '3d' : '2d')}
+            onClick={() => handleViewModeChange(viewMode === '2d' ? '3d' : '2d')}
           >
             Switch to {viewMode === '2d' ? '3D' : '2D'}
           </button>
@@ -919,6 +977,26 @@ export default function MissionPlannerWrapper() {
               // mission simulation logic
             }
             setShowCountdown(false)
+          }}
+        />
+      )}
+
+      {/* 3D Simulation Countdown Modal */}
+      {show3DCountdown && (
+        <CountdownModal
+          message={countdownMessage}
+          seconds={countdownMessage === 'Starting 3D simulation in' ? 3 : 2}
+          onComplete={() => {
+            if (
+              countdownMessage === 'Starting 3D simulation in' &&
+              Array.isArray(waypoints) &&
+              waypoints.length > 0
+            ) {
+              console.log('🚁 3D simulation countdown complete - starting simulation...')
+              // TODO: Start actual 3D simulation here in Phase 2
+              setShow3DCountdown(false)
+            }
+            setShow3DCountdown(false)
           }}
         />
       )}

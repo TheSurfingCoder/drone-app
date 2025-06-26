@@ -16,6 +16,9 @@ export default function DroneController({
   setDroneHeading,
   droneHeading,
   missionSettings,
+  onStartSimulation,
+  shouldCancelSimulation,
+  setShouldCancelSimulation,
 }) {
   const [clicked, setClicked] = useState(false)
 
@@ -52,18 +55,42 @@ export default function DroneController({
   const handleStartMission = () => {
     setClicked(true)
     setTimeout(() => setClicked(false), 150)
-    if (!waypoints || waypoints.length === 0) {
-      setCountdownMessage('There are no waypoints. Please click on the map to set some.')
-      setShowCountdown(true)
-      return
+
+    // Reset the cancel flag when starting a new simulation
+    if (shouldCancelSimulation) {
+      setShouldCancelSimulation(false)
     }
-    setCountdownMessage('Starting in')
-    setShowCountdown(true)
+
+    // Call the parent's simulation start function
+    onStartSimulation?.()
   }
 
+  // Cancel simulation when shouldCancelSimulation is true
   useEffect(() => {
-    if (showCountdown) return
-    if (!waypoints || waypoints.length < 2) return
+    if (shouldCancelSimulation && animationRef.current) {
+      console.log('🛑 Canceling 2D simulation animation loop', shouldCancelSimulation)
+      cancelAnimationFrame(animationRef.current)
+      animationRef.current = null
+      lastTimeRef.current = null
+      currentPathRef.current = []
+      currentPathIndexRef.current = 0
+      currentPositionRef.current = null
+      headingStateRef.current = { segmentId: null, start: 0, end: 0 }
+    }
+  }, [shouldCancelSimulation])
+
+  // Only run 2D simulation logic when in 2D mode and not canceled
+  useEffect(() => {
+    if (shouldCancelSimulation) {
+      console.log('🛑 2D simulation: Simulation canceled, skipping')
+      return // Don't run if simulation should be canceled
+    }
+    if (showCountdown) {
+      return
+    }
+    if (!waypoints || waypoints.length < 2) {
+      return
+    }
 
     const fullPath = [] // Holds all drone lat/lng steps
 
@@ -154,9 +181,9 @@ export default function DroneController({
 
       // Update drone position and heading
       droneHeadingRef.current = interpolatedHeading
+      setDronePosition(nextPos)
       setDroneHeading(interpolatedHeading)
       currentPositionRef.current = nextPos
-      setDronePosition(nextPos)
 
       const dist = Math.sqrt(Math.pow(to.lat - nextPos.lat, 2) + Math.pow(to.lng - nextPos.lng, 2))
 
@@ -179,8 +206,12 @@ export default function DroneController({
 
     animationRef.current = requestAnimationFrame(step)
 
-    return () => cancelAnimationFrame(animationRef.current)
-  }, [showCountdown])
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+      }
+    }
+  }, [showCountdown, shouldCancelSimulation])
 
   return (
     <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 text-xs sm:text-base w-max">
